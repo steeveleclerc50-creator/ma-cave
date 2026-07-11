@@ -1,0 +1,2946 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Ma Cave" />
+<title>Ma Cave à Vin</title>
+<link rel="icon" href="data:,">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; background: #F5F5F2; }
+#root { min-height: 100vh; }
+
+:root {
+  --bg: #F5F5F2; --surface: #FFFFFF; --ink: #211D1B; --ink-soft: #6E6862;
+  --wine: #6E1530; --wine-deep: #4E0F22; --line: #E6E2DA;
+}
+.cv-root { display: flex; min-height: 100vh; background: var(--bg); color: var(--ink); font-family: 'Inter', sans-serif; }
+.cv-sidebar { width: 220px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--line); padding: 24px 14px; display: flex; flex-direction: column; gap: 20px; }
+.cv-brand { display: flex; align-items: center; gap: 8px; font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; color: var(--wine-deep); padding: 0 8px; }
+.cv-sidebar nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.cv-nav-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: none; background: none; border-radius: 8px; font-family: 'Inter'; font-size: 14px; font-weight: 500; color: var(--ink-soft); cursor: pointer; text-align: left; transition: background .15s, color .15s; width: 100%; }
+.cv-nav-btn:hover { background: #F0EDE6; color: var(--ink); }
+.cv-nav-btn.active { background: var(--wine-deep); color: #fff; }
+.cv-nav-btn span:first-of-type { flex: 1; }
+.cv-nav-foot { border-top: 1px solid var(--line); padding-top: 10px; }
+.cv-main { flex: 1; padding: 32px 40px; overflow-y: auto; max-width: 1100px; }
+.cv-view-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.cv-view-head h2 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 600; margin: 0 0 4px; }
+.cv-muted { color: var(--ink-soft); font-size: 13.5px; margin: 0; }
+.cv-small { font-size: 12.5px; }
+.cv-chip-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+
+.cv-kpi-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+
+.cv-gate-screen { min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.cv-gate-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; max-width: 460px; width: 100%; }
+.cv-gate-title { font-family: 'Fraunces', serif; font-size: 22px; margin: 0 0 10px; }
+.cv-settings-cloud-block { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+.cv-kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px; min-width: 140px; }
+.cv-kpi strong { display: block; font-family: 'IBM Plex Mono'; font-size: 20px; margin-top: 2px; }
+.cv-dash-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; align-items: start; }
+.cv-dash-title { font-family: 'Fraunces', serif; font-size: 16px; margin: 0 0 16px; }
+.cv-donut-wrap { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.cv-donut { width: 140px; height: 140px; border-radius: 50%; position: relative; flex-shrink: 0; }
+.cv-donut-hole { position: absolute; inset: 14px; background: var(--surface); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.cv-donut-hole strong { font-family: 'IBM Plex Mono'; font-size: 20px; }
+.cv-donut-hole span { font-size: 11px; color: var(--ink-soft); }
+.cv-donut-legend { display: flex; flex-direction: column; gap: 8px; }
+.cv-legend-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.cv-legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.cv-legend-label { flex: 1; }
+.cv-legend-value { font-family: 'IBM Plex Mono'; color: var(--ink-soft); }
+.cv-bars-chart { display: flex; gap: 20px; align-items: flex-end; height: 220px; padding: 10px 4px 0; }
+.cv-bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; }
+.cv-bar-track { flex: 1; width: 100%; max-width: 56px; display: flex; align-items: flex-end; }
+.cv-bar-stack { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 0 0; overflow: hidden; min-height: 2px; }
+.cv-bar-segment { width: 100%; }
+.cv-bar-total { font-family: 'IBM Plex Mono'; font-size: 13px; margin-top: 8px; }
+.cv-bar-label { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+.cv-bars-legend { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+.cv-bars-legend-group { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.cv-bars-legend-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.cv-bars-legend-items .cv-chip { display: flex; align-items: center; gap: 5px; border-width: 1.5px; cursor: default; }
+.cv-chip { border: 1px solid var(--line); background: var(--surface); padding: 6px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; color: var(--ink-soft); }
+.cv-chip.active { background: var(--wine-deep); border-color: var(--wine-deep); color: #fff; }
+.cv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.cv-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; transition: box-shadow .15s, transform .15s; }
+.cv-card:hover { box-shadow: 0 6px 18px rgba(33,29,27,0.08); transform: translateY(-1px); }
+.cv-card-visual { display: flex; align-items: center; justify-content: center; padding: 16px; position: relative; }
+.cv-qty-badge { position: absolute; top: 10px; right: 12px; background: var(--wine-deep); color: #fff; font-family: 'IBM Plex Mono'; font-size: 11px; padding: 2px 7px; border-radius: 999px; }
+.cv-card-body { padding: 12px 14px 6px; flex: 1; }
+.cv-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.cv-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.cv-vintage { font-family: 'IBM Plex Mono'; font-size: 12px; color: var(--ink-soft); }
+.cv-card-body h4 { font-family: 'Fraunces', serif; font-size: 15.5px; margin: 0 0 4px; font-weight: 600; line-height: 1.25; }
+.cv-apogee { display: flex; align-items: center; gap: 4px; color: var(--ink-soft); margin: 4px 0 0; }
+.cv-card-actions { display: flex; gap: 6px; padding: 10px 14px 14px; }
+.cv-mini-btn { flex: 1; border: 1px solid var(--line); background: var(--bg); border-radius: 7px; padding: 6px 0; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--ink); font-size: 15px; }
+.cv-mini-btn:hover:not(:disabled) { background: var(--wine-deep); color: #fff; border-color: var(--wine-deep); }
+.cv-mini-btn:disabled { opacity: .35; cursor: not-allowed; }
+.cv-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 60px 20px; color: var(--ink-soft); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; text-align: center; }
+.cv-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; font-family: 'Inter'; }
+.cv-btn-primary { background: var(--wine-deep); color: #fff; }
+.cv-btn-primary:hover:not(:disabled) { background: var(--wine); }
+.cv-btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+.cv-btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+.cv-modal-overlay { position: fixed; inset: 0; background: rgba(33,29,27,0.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+.cv-modal { background: var(--surface); border-radius: 14px; max-width: 520px; width: 100%; max-height: 88vh; max-height: 88dvh; overflow-y: auto; display: flex; flex-direction: column; }
+.cv-modal-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); z-index: 3; flex-shrink: 0; }
+.cv-modal-head h3 { font-family: 'Fraunces', serif; font-size: 18px; margin: 0; }
+.cv-icon-btn { border: none; background: none; cursor: pointer; color: var(--ink-soft); padding: 4px; font-size: 18px; line-height: 1; }
+.cv-modal-body { padding: 18px 20px 22px; }
+.cv-modal-actions { position: sticky; bottom: 0; background: var(--surface); margin: 18px -20px -22px; padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px; z-index: 2; }
+.cv-tabs { display: flex; gap: 6px; margin-bottom: 16px; background: var(--bg); border-radius: 9px; padding: 4px; }
+.cv-tabs button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; background: none; padding: 8px 0; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+.cv-tabs button.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.cv-upload-box { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 16px; border: 1.5px dashed var(--line); border-radius: 10px; background: var(--bg); cursor: pointer; color: var(--ink-soft); font-size: 13px; }
+.cv-photo-source-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.cv-photo-source-row .cv-upload-box { flex: 1; min-width: 130px; padding: 20px 10px; text-align: center; font-size: 12.5px; }
+.cv-photo-source-row .cv-link-btn { flex: 1; }
+.cv-upload-box-sm { padding: 16px; }
+.cv-photo-zone { margin-bottom: 16px; }
+.cv-photo-preview { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
+.cv-photo-preview-sm { width: 100%; max-height: 140px; object-fit: cover; border-radius: 10px; }
+.cv-photo-inline { margin: 12px 0; }
+.cv-link-btn { border: none; background: none; color: var(--wine-deep); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0; }
+.cv-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+.cv-field { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin-top: 12px; }
+.cv-field input, .cv-field select, .cv-field textarea { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; font-size: 14px; font-family: 'Inter'; color: var(--ink); background: var(--bg); }
+.cv-field input:focus, .cv-field select:focus, .cv-field textarea:focus { outline: 2px solid var(--wine-deep); outline-offset: 1px; }
+.cv-alert { display: flex; align-items: center; gap: 7px; background: #FBEAEC; color: #8A2340; padding: 9px 12px; border-radius: 8px; font-size: 12.5px; margin: 10px 0; }
+.cv-alert-info { background: #EEF1E8; color: #445032; }
+.cv-spinner { display: flex; align-items: center; gap: 10px; color: var(--ink-soft); font-size: 13px; padding: 10px 0; }
+.cv-spin-circle { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--wine-deep); animation: cv-rotate .8s linear infinite; flex-shrink: 0; }
+@keyframes cv-rotate { to { transform: rotate(360deg); } }
+.cv-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; max-width: 560px; }
+.cv-result { margin-top: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; max-width: 560px; }
+.cv-result-bottle { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.cv-result-bottle h3 { font-family: 'Fraunces', serif; margin: 2px 0 0; font-size: 18px; }
+.cv-reasoning { font-size: 14px; line-height: 1.5; margin: 10px 0 16px; }
+.cv-service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cv-service-grid > div { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 8px; padding: 9px 11px; font-size: 12.5px; }
+.cv-suggestions { display: grid; gap: 12px; margin-top: 20px; max-width: 560px; }
+.cv-suggestion-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; position: relative; }
+.cv-suggestion-num { position: absolute; top: -10px; left: 14px; background: var(--wine-deep); color: #fff; font-family: 'IBM Plex Mono'; font-size: 11px; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.cv-suggestion-card h4 { font-family: 'Fraunces', serif; margin: 4px 0 6px; font-size: 15.5px; }
+.cv-why { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+.cv-analysis { margin-top: 22px; max-width: 640px; }
+.cv-analysis h3 { font-family: 'Fraunces', serif; font-size: 20px; margin: 0 0 14px; }
+.cv-analysis-title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.cv-analysis-title-row h3 { margin: 0; }
+.cv-analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cv-fav-photo { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; }
+.cv-fav-note-preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 4px; }
+.cv-analysis-item { display: flex; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.cv-analysis-item span.lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-soft); }
+.cv-analysis-item p { margin: 3px 0 0; font-size: 13px; line-height: 1.4; }
+.cv-detail-head { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; }
+.cv-detail-visual { width: 90px; height: 90px; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.cv-detail-visual img { width: 100%; height: 100%; object-fit: cover; }
+.cv-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.cv-detail-grid > div { background: var(--bg); border-radius: 8px; padding: 10px 12px; }
+.cv-detail-grid strong { display: block; font-family: 'IBM Plex Mono'; font-size: 14px; margin-top: 2px; }
+.cv-notes { font-size: 13px; background: var(--bg); border-radius: 8px; padding: 10px 12px; display: flex; gap: 8px; }
+.cv-key-row { display: flex; gap: 8px; align-items: center; }
+.cv-key-row input { flex: 1; }
+.cv-key-status { display: flex; align-items: center; gap: 6px; font-size: 12.5px; margin-top: 8px; }
+.cv-emoji { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+@media (max-width: 760px) {
+  .cv-root { flex-direction: column; }
+  .cv-sidebar { width: 100%; flex-direction: row; align-items: center; padding: 10px 12px; overflow-x: auto; gap: 10px; }
+  .cv-brand { padding: 0 4px; }
+  .cv-sidebar nav { flex-direction: row; flex: none; }
+  .cv-nav-foot { border-top: none; padding-top: 0; }
+  .cv-nav-btn span:first-of-type { display: none; }
+  .cv-main { padding: 18px; padding-bottom: 40px; }
+  .cv-form-grid { grid-template-columns: 1fr; }
+  .cv-analysis-grid { grid-template-columns: 1fr; }
+  .cv-service-grid { grid-template-columns: 1fr; }
+  .cv-dash-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i.return) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+var _React = React,
+  useState = _React.useState,
+  useEffect = _React.useEffect,
+  useRef = _React.useRef,
+  useCallback = _React.useCallback;
+
+/* ---------------------------------------------------------
+   ICONES (emoji, aucune dépendance externe)
+--------------------------------------------------------- */
+var EMOJI = {
+  wine: "🍷",
+  camera: "📷",
+  plus: "➕",
+  minus: "➖",
+  chef: "👨‍🍳",
+  scan: "🔎",
+  grape: "🍇",
+  thermo: "🌡️",
+  clock: "⏱️",
+  sparkles: "✨",
+  close: "✕",
+  trend: "📈",
+  euro: "💶",
+  calendar: "📅",
+  notes: "📝",
+  chevron: "›",
+  check: "✅",
+  alert: "⚠️",
+  glass: "🥂",
+  info: "ℹ️",
+  gear: "⚙️",
+  key: "🔑",
+  heart: "❤️",
+  heartOutline: "🤍",
+  trash: "🗑️",
+  gallery: "🖼️",
+  chart: "📊",
+  cellar: "🏠"
+};
+function Icon(_ref) {
+  var name = _ref.name,
+    _ref$size = _ref.size,
+    size = _ref$size === void 0 ? 15 : _ref$size;
+  return /*#__PURE__*/React.createElement("span", {
+    className: "cv-emoji",
+    style: {
+      fontSize: size,
+      width: size + 2,
+      height: size + 2
+    }
+  }, EMOJI[name] || "");
+}
+
+/* ---------------------------------------------------------
+   CONFIG
+--------------------------------------------------------- */
+var WINE_TYPES = {
+  rouge: {
+    label: "Rouge",
+    body: "#6E1530",
+    shoulder: "#4E0F22",
+    label_bg: "#F3E6EA"
+  },
+  blanc: {
+    label: "Blanc",
+    body: "#D9C671",
+    shoulder: "#B8A252",
+    label_bg: "#F7F3E3"
+  },
+  rose: {
+    label: "Rosé",
+    body: "#E8A8B0",
+    shoulder: "#D6828D",
+    label_bg: "#FBEAEC"
+  },
+  effervescent: {
+    label: "Effervescent",
+    body: "#CBA653",
+    shoulder: "#A9863C",
+    label_bg: "#F6EFDC"
+  }
+};
+var TYPE_ORDER = ["rouge", "blanc", "rose", "effervescent"];
+var API_URL = "https://api.anthropic.com/v1/messages";
+var MODEL = "claude-sonnet-4-6";
+var LS_API_KEY = "cv-api-key";
+
+/* ---------------------------------------------------------
+   HELPERS
+--------------------------------------------------------- */
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function fileToResizedBase64(file) {
+  var maxDim = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1000;
+  var quality = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0.82;
+  return new Promise(function (resolve, reject) {
+    var reader = new FileReader();
+    reader.onerror = function () {
+      return reject(new Error("Lecture du fichier impossible"));
+    };
+    reader.onload = function () {
+      var img = new Image();
+      img.onerror = function () {
+        return reject(new Error("Image illisible"));
+      };
+      img.onload = function () {
+        var width = img.width,
+          height = img.height;
+        if (width > height && width > maxDim) {
+          height = Math.round(height * maxDim / width);
+          width = maxDim;
+        } else if (height > maxDim) {
+          width = Math.round(width * maxDim / height);
+          height = maxDim;
+        }
+        var canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality).split(",")[1]);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function extractJSON(text) {
+  if (!text) return null;
+  var cleaned = text.trim().replace(/^```json/i, "").replace(/^```/, "").replace(/```$/, "").trim();
+  var start = cleaned.indexOf("{");
+  var end = cleaned.lastIndexOf("}");
+  if (start === -1 || end === -1) return null;
+  try {
+    return JSON.parse(cleaned.slice(start, end + 1));
+  } catch (_unused) {
+    return null;
+  }
+}
+function getApiKey() {
+  return localStorage.getItem(LS_API_KEY) || "";
+}
+function callClaude(_x) {
+  return _callClaude.apply(this, arguments);
+}
+/* ---------------------------------------------------------
+   FIREBASE (config, auth, Firestore, Storage)
+--------------------------------------------------------- */
+// Ces valeurs ne sont pas secrètes : la sécurité vient des règles Firestore/Storage
+// (auth.uid == userId), pas de la confidentialité de cette config.
+function _callClaude() {
+  _callClaude = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1(_ref2) {
+    var system, text, _ref2$images, images, _ref2$webSearch, webSearch, _ref2$maxTokens, maxTokens, apiKey, content, body, res, errBody, data;
+    return _regenerator().w(function (_context1) {
+      while (1) switch (_context1.n) {
+        case 0:
+          system = _ref2.system, text = _ref2.text, _ref2$images = _ref2.images, images = _ref2$images === void 0 ? [] : _ref2$images, _ref2$webSearch = _ref2.webSearch, webSearch = _ref2$webSearch === void 0 ? false : _ref2$webSearch, _ref2$maxTokens = _ref2.maxTokens, maxTokens = _ref2$maxTokens === void 0 ? 1200 : _ref2$maxTokens;
+          apiKey = getApiKey();
+          if (apiKey) {
+            _context1.n = 1;
+            break;
+          }
+          throw new Error("Aucune clé API renseignée. Ouvre Réglages pour l'ajouter.");
+        case 1:
+          content = [];
+          images.forEach(function (img) {
+            return content.push({
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: "image/jpeg",
+                data: img
+              }
+            });
+          });
+          if (text) content.push({
+            type: "text",
+            text: text
+          });
+          body = {
+            model: MODEL,
+            max_tokens: maxTokens,
+            system: system,
+            messages: [{
+              role: "user",
+              content: content
+            }]
+          };
+          if (webSearch) body.tools = [{
+            type: "web_search_20250305",
+            name: "web_search"
+          }];
+          _context1.n = 2;
+          return fetch(API_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
+              "anthropic-dangerous-direct-browser-access": "true"
+            },
+            body: JSON.stringify(body)
+          });
+        case 2:
+          res = _context1.v;
+          if (res.ok) {
+            _context1.n = 4;
+            break;
+          }
+          _context1.n = 3;
+          return res.text();
+        case 3:
+          errBody = _context1.v;
+          throw new Error("Erreur API (" + res.status + ") : " + errBody.slice(0, 200));
+        case 4:
+          _context1.n = 5;
+          return res.json();
+        case 5:
+          data = _context1.v;
+          return _context1.a(2, (data.content || []).filter(function (b) {
+            return b.type === "text";
+          }).map(function (b) {
+            return b.text;
+          }).join("\n"));
+      }
+    }, _callee1);
+  }));
+  return _callClaude.apply(this, arguments);
+}
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCWyT29jEKCh_N5nF4bl9QVfUmDqnxO28k",
+  authDomain: "ma-cave-vin.firebaseapp.com",
+  projectId: "ma-cave-vin",
+  storageBucket: "ma-cave-vin.firebasestorage.app",
+  messagingSenderId: "14843613484",
+  appId: "1:14843613484:web:10f3da6ea12515e2db5c89"
+};
+var fbApp = null;
+function initFirebase() {
+  if (!fbApp) {
+    fbApp = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  return fbApp;
+}
+function caveDocRef(uid) {
+  return firebase.firestore().collection("caves").doc(uid);
+}
+function loadCaveData(_x2) {
+  return _loadCaveData.apply(this, arguments);
+}
+function _loadCaveData() {
+  _loadCaveData = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10(uid) {
+    var snap, d, _t0;
+    return _regenerator().w(function (_context10) {
+      while (1) switch (_context10.p = _context10.n) {
+        case 0:
+          _context10.p = 0;
+          _context10.n = 1;
+          return caveDocRef(uid).get();
+        case 1:
+          snap = _context10.v;
+          if (!snap.exists) {
+            _context10.n = 2;
+            break;
+          }
+          d = snap.data();
+          if (!d.cellars || !d.cellars.length) d.cellars = ["Cave 1", "Cave 2"];
+          return _context10.a(2, d);
+        case 2:
+          _context10.n = 4;
+          break;
+        case 3:
+          _context10.p = 3;
+          _t0 = _context10.v;
+          console.error("Chargement impossible", _t0);
+        case 4:
+          return _context10.a(2, {
+            bottles: [],
+            movements: [],
+            favorites: [],
+            cellars: ["Cave 1", "Cave 2"]
+          });
+      }
+    }, _callee10, null, [[0, 3]]);
+  }));
+  return _loadCaveData.apply(this, arguments);
+}
+function saveCaveData(_x3, _x4) {
+  return _saveCaveData.apply(this, arguments);
+}
+function _saveCaveData() {
+  _saveCaveData = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee11(uid, data) {
+    var _t1;
+    return _regenerator().w(function (_context11) {
+      while (1) switch (_context11.p = _context11.n) {
+        case 0:
+          _context11.p = 0;
+          _context11.n = 1;
+          return caveDocRef(uid).set(data);
+        case 1:
+          _context11.n = 3;
+          break;
+        case 2:
+          _context11.p = 2;
+          _t1 = _context11.v;
+          console.error("Sauvegarde impossible", _t1);
+        case 3:
+          return _context11.a(2);
+      }
+    }, _callee11, null, [[0, 2]]);
+  }));
+  return _saveCaveData.apply(this, arguments);
+}
+function uploadPhoto(_x5, _x6, _x7) {
+  return _uploadPhoto.apply(this, arguments);
+}
+/* ---------------------------------------------------------
+   ICONE BOUTEILLE (signature visuelle, SVG pur)
+--------------------------------------------------------- */
+function _uploadPhoto() {
+  _uploadPhoto = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee12(uid, id, base64) {
+    var ref;
+    return _regenerator().w(function (_context12) {
+      while (1) switch (_context12.n) {
+        case 0:
+          if (base64) {
+            _context12.n = 1;
+            break;
+          }
+          return _context12.a(2, null);
+        case 1:
+          ref = firebase.storage().ref().child("users/" + uid + "/photos/" + id + ".jpg");
+          _context12.n = 2;
+          return ref.putString(base64, "base64", {
+            contentType: "image/jpeg"
+          });
+        case 2:
+          _context12.n = 3;
+          return ref.getDownloadURL();
+        case 3:
+          return _context12.a(2, _context12.v);
+      }
+    }, _callee12);
+  }));
+  return _uploadPhoto.apply(this, arguments);
+}
+function BottleIcon(_ref3) {
+  var _ref3$type = _ref3.type,
+    type = _ref3$type === void 0 ? "rouge" : _ref3$type,
+    _ref3$size = _ref3.size,
+    size = _ref3$size === void 0 ? 56 : _ref3$size;
+  var t = WINE_TYPES[type] || WINE_TYPES.rouge;
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size * 1.85,
+    viewBox: "0 0 44 82",
+    fill: "none"
+  }, /*#__PURE__*/React.createElement("rect", {
+    x: "18",
+    y: "0",
+    width: "8",
+    height: "10",
+    rx: "1.5",
+    fill: type === "effervescent" ? "#C9A15A" : t.shoulder
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M17 10 H27 V22 C27 22 34 28 34 40 V76 C34 79.3 31.3 82 28 82 H16 C12.7 82 10 79.3 10 76 V40 C10 28 17 22 17 22 Z",
+    fill: t.body
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M17 10 H27 V22 C27 22 24.5 24.5 22 24.5 C19.5 24.5 17 22 17 22 Z",
+    fill: t.shoulder,
+    opacity: "0.9"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "10",
+    y: "46",
+    width: "24",
+    height: "17",
+    fill: t.label_bg,
+    opacity: "0.95"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "10",
+    y: "46",
+    width: "24",
+    height: "17",
+    fill: "none",
+    stroke: t.shoulder,
+    strokeWidth: "0.6",
+    opacity: "0.5"
+  }));
+}
+
+/* ---------------------------------------------------------
+   PRIMITIVES UI
+--------------------------------------------------------- */
+function Modal(_ref4) {
+  var title = _ref4.title,
+    onClose = _ref4.onClose,
+    children = _ref4.children;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "cv-modal-overlay",
+    onMouseDown: function onMouseDown(e) {
+      return e.target === e.currentTarget && onClose();
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-modal"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-modal-head"
+  }, /*#__PURE__*/React.createElement("h3", null, title), /*#__PURE__*/React.createElement("button", {
+    className: "cv-icon-btn",
+    onClick: onClose,
+    "aria-label": "Fermer"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "close",
+    size: 16
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-modal-body"
+  }, children)));
+}
+function Field(_ref5) {
+  var label = _ref5.label,
+    children = _ref5.children;
+  return /*#__PURE__*/React.createElement("label", {
+    className: "cv-field"
+  }, /*#__PURE__*/React.createElement("span", null, label), children);
+}
+function Spinner(_ref6) {
+  var label = _ref6.label;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "cv-spinner"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "cv-spin-circle"
+  }), /*#__PURE__*/React.createElement("span", null, label));
+}
+
+/* ---------------------------------------------------------
+   CONNEXION
+--------------------------------------------------------- */
+function AuthScreen() {
+  var _useState = useState("login"),
+    _useState2 = _slicedToArray(_useState, 2),
+    mode = _useState2[0],
+    setMode = _useState2[1];
+  var _useState3 = useState(""),
+    _useState4 = _slicedToArray(_useState3, 2),
+    email = _useState4[0],
+    setEmail = _useState4[1];
+  var _useState5 = useState(""),
+    _useState6 = _slicedToArray(_useState5, 2),
+    password = _useState6[0],
+    setPassword = _useState6[1];
+  var _useState7 = useState(""),
+    _useState8 = _slicedToArray(_useState7, 2),
+    error = _useState8[0],
+    setError = _useState8[1];
+  var _useState9 = useState(false),
+    _useState0 = _slicedToArray(_useState9, 2),
+    loading = _useState0[0],
+    setLoading = _useState0[1];
+  function submit() {
+    return _submit.apply(this, arguments);
+  }
+  function _submit() {
+    _submit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+      var map, _t;
+      return _regenerator().w(function (_context) {
+        while (1) switch (_context.p = _context.n) {
+          case 0:
+            if (!(!email.trim() || !password)) {
+              _context.n = 1;
+              break;
+            }
+            setError("Renseigne ton email et ton mot de passe.");
+            return _context.a(2);
+          case 1:
+            setError("");
+            setLoading(true);
+            _context.p = 2;
+            if (!(mode === "login")) {
+              _context.n = 4;
+              break;
+            }
+            _context.n = 3;
+            return firebase.auth().signInWithEmailAndPassword(email.trim(), password);
+          case 3:
+            _context.n = 5;
+            break;
+          case 4:
+            _context.n = 5;
+            return firebase.auth().createUserWithEmailAndPassword(email.trim(), password);
+          case 5:
+            _context.n = 7;
+            break;
+          case 6:
+            _context.p = 6;
+            _t = _context.v;
+            map = {
+              "auth/invalid-email": "Adresse email invalide.",
+              "auth/user-not-found": "Aucun compte avec cet email. Crée-en un.",
+              "auth/wrong-password": "Mot de passe incorrect.",
+              "auth/email-already-in-use": "Un compte existe déjà avec cet email. Connecte-toi plutôt.",
+              "auth/weak-password": "Mot de passe trop court (6 caractères minimum).",
+              "auth/invalid-credential": "Email ou mot de passe incorrect."
+            };
+            setError(map[_t.code] || _t.message);
+          case 7:
+            _context.p = 7;
+            setLoading(false);
+            return _context.f(7);
+          case 8:
+            return _context.a(2);
+        }
+      }, _callee, null, [[2, 6, 7, 8]]);
+    }));
+    return _submit.apply(this, arguments);
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "cv-gate-screen"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-gate-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-brand",
+    style: {
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "wine",
+    size: 19
+  }), /*#__PURE__*/React.createElement("span", null, "Ma Cave")), /*#__PURE__*/React.createElement("h2", {
+    className: "cv-gate-title"
+  }, mode === "login" ? "Connexion" : "Créer mon compte"), /*#__PURE__*/React.createElement("p", {
+    className: "cv-muted cv-small"
+  }, mode === "login" ? "Connecte-toi pour retrouver ta cave, où que tu sois." : "Crée un compte pour que ta cave soit sauvegardée dans le cloud."), /*#__PURE__*/React.createElement(Field, {
+    label: "Email"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "email",
+    value: email,
+    onChange: function onChange(e) {
+      return setEmail(e.target.value);
+    },
+    placeholder: "toi@exemple.com"
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Mot de passe"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: password,
+    onChange: function onChange(e) {
+      return setPassword(e.target.value);
+    },
+    placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+  })), error && /*#__PURE__*/React.createElement("div", {
+    className: "cv-alert"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "alert",
+    size: 14
+  }), " ", error), /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-primary",
+    style: {
+      marginTop: 10,
+      width: "100%",
+      justifyContent: "center"
+    },
+    onClick: submit,
+    disabled: loading
+  }, loading ? /*#__PURE__*/React.createElement("span", {
+    className: "cv-spin-circle"
+  }) : /*#__PURE__*/React.createElement(Icon, {
+    name: "key",
+    size: 14
+  }), " ", mode === "login" ? "Se connecter" : "Créer mon compte"), /*#__PURE__*/React.createElement("button", {
+    className: "cv-link-btn",
+    style: {
+      marginTop: 14
+    },
+    onClick: function onClick() {
+      setMode(mode === "login" ? "signup" : "login");
+      setError("");
+    }
+  }, mode === "login" ? "Pas encore de compte ? En créer un" : "Déjà un compte ? Se connecter")));
+}
+
+/* ---------------------------------------------------------
+   RÉGLAGES (clé API)
+--------------------------------------------------------- */
+function SettingsModal(_ref7) {
+  var onClose = _ref7.onClose,
+    cellars = _ref7.cellars,
+    onSaveCellars = _ref7.onSaveCellars,
+    userEmail = _ref7.userEmail,
+    onSignOut = _ref7.onSignOut;
+  var _useState1 = useState(getApiKey()),
+    _useState10 = _slicedToArray(_useState1, 2),
+    key = _useState10[0],
+    setKey = _useState10[1];
+  var _useState11 = useState(cellars),
+    _useState12 = _slicedToArray(_useState11, 2),
+    cellarNames = _useState12[0],
+    setCellarNames = _useState12[1];
+  var _useState13 = useState(false),
+    _useState14 = _slicedToArray(_useState13, 2),
+    saved = _useState14[0],
+    setSaved = _useState14[1];
+  function save() {
+    localStorage.setItem(LS_API_KEY, key.trim());
+    var cleaned = cellarNames.map(function (c, i) {
+      return c.trim() || "Cave " + (i + 1);
+    });
+    onSaveCellars(cleaned);
+    setSaved(true);
+    setTimeout(function () {
+      return setSaved(false);
+    }, 2000);
+  }
+  return /*#__PURE__*/React.createElement(Modal, {
+    title: "R\xE9glages",
+    onClose: onClose
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "cv-small cv-muted"
+  }, "Les fonctions IA (lecture d'\xE9tiquette, accords mets-vins, analyse) appellent l'API Anthropic directement depuis ton navigateur. Renseigne ta propre cl\xE9 API pour les activer."), /*#__PURE__*/React.createElement(Field, {
+    label: "Cl\xE9 API Anthropic"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: key,
+    onChange: function onChange(e) {
+      return setKey(e.target.value);
+    },
+    placeholder: "sk-ant-..."
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "cv-alert cv-alert-info"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "info",
+    size: 14
+  }), /*#__PURE__*/React.createElement("span", null, "Ta cl\xE9 est stock\xE9e uniquement dans ce navigateur (localStorage), jamais envoy\xE9e ailleurs qu'\xE0 l'API Anthropic. Cr\xE9e-la sur console.anthropic.com \u2192 API Keys, et de pr\xE9f\xE9rence avec une limite de d\xE9pense.")), /*#__PURE__*/React.createElement("p", {
+    className: "cv-small cv-muted",
+    style: {
+      marginTop: 18
+    }
+  }, "Si tu as plusieurs caves physiques, donne-leur un nom pour les distinguer lors de l'ajout de bouteilles."), /*#__PURE__*/React.createElement("div", {
+    className: "cv-form-grid"
+  }, cellarNames.map(function (name, i) {
+    return /*#__PURE__*/React.createElement(Field, {
+      label: "Nom de la cave " + (i + 1),
+      key: i
+    }, /*#__PURE__*/React.createElement("input", {
+      value: name,
+      onChange: function onChange(e) {
+        return setCellarNames(function (prev) {
+          return prev.map(function (c, j) {
+            return j === i ? e.target.value : c;
+          });
+        });
+      },
+      placeholder: "Cave " + (i + 1)
+    }));
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "cv-modal-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-ghost",
+    onClick: onClose
+  }, "Fermer"), /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-primary",
+    onClick: save
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "key",
+    size: 14
+  }), " Enregistrer")), saved && /*#__PURE__*/React.createElement("p", {
+    className: "cv-small",
+    style: {
+      color: "#445032",
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "check",
+    size: 13
+  }), " Enregistr\xE9."), /*#__PURE__*/React.createElement("div", {
+    className: "cv-settings-cloud-block"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "cv-small cv-muted"
+  }, "Cave connect\xE9e au cloud avec le compte :"), /*#__PURE__*/React.createElement("p", {
+    className: "cv-small",
+    style: {
+      fontWeight: 600
+    }
+  }, userEmail), /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-ghost",
+    onClick: onSignOut
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "close",
+    size: 13
+  }), " Se d\xE9connecter")));
+}
+
+/* ---------------------------------------------------------
+   AJOUT D'UNE BOUTEILLE
+--------------------------------------------------------- */
+function AddBottleModal(_ref8) {
+  var onClose = _ref8.onClose,
+    onSave = _ref8.onSave,
+    cellars = _ref8.cellars,
+    uid = _ref8.uid;
+  var _useState15 = useState("photo"),
+    _useState16 = _slicedToArray(_useState15, 2),
+    mode = _useState16[0],
+    setMode = _useState16[1];
+  var _useState17 = useState(false),
+    _useState18 = _slicedToArray(_useState17, 2),
+    analyzing = _useState18[0],
+    setAnalyzing = _useState18[1];
+  var _useState19 = useState("Lecture de l'étiquette..."),
+    _useState20 = _slicedToArray(_useState19, 2),
+    analyzeLabel = _useState20[0],
+    setAnalyzeLabel = _useState20[1];
+  var _useState21 = useState(false),
+    _useState22 = _slicedToArray(_useState21, 2),
+    saving = _useState22[0],
+    setSaving = _useState22[1];
+  var _useState23 = useState(""),
+    _useState24 = _slicedToArray(_useState23, 2),
+    error = _useState24[0],
+    setError = _useState24[1];
+  var _useState25 = useState(null),
+    _useState26 = _slicedToArray(_useState25, 2),
+    photoB64 = _useState26[0],
+    setPhotoB64 = _useState26[1];
+  var _useState27 = useState({
+      name: "",
+      vintage: "",
+      type: "rouge",
+      region: "",
+      appellation: "",
+      cepage: "",
+      quantity: 1,
+      price: "",
+      marketPrice: "",
+      apogeeFrom: "",
+      apogeeTo: "",
+      idealTemp: "",
+      cellar: 0,
+      notes: ""
+    }),
+    _useState28 = _slicedToArray(_useState27, 2),
+    form = _useState28[0],
+    setForm = _useState28[1];
+  var cameraRef = useRef(null);
+  var galleryRef = useRef(null);
+  var set = function set(k) {
+    return function (e) {
+      return setForm(function (f) {
+        return _objectSpread(_objectSpread({}, f), {}, _defineProperty({}, k, e.target.value));
+      });
+    };
+  };
+  function handleFile(_x8) {
+    return _handleFile.apply(this, arguments);
+  }
+  function _handleFile() {
+    _handleFile = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(e) {
+      var file, b64, raw, parsed, _t2;
+      return _regenerator().w(function (_context2) {
+        while (1) switch (_context2.p = _context2.n) {
+          case 0:
+            file = e.target.files[0];
+            if (file) {
+              _context2.n = 1;
+              break;
+            }
+            return _context2.a(2);
+          case 1:
+            setError("");
+            setAnalyzing(true);
+            setAnalyzeLabel("Lecture de l'étiquette...");
+            _context2.p = 2;
+            _context2.n = 3;
+            return fileToResizedBase64(file);
+          case 3:
+            b64 = _context2.v;
+            setPhotoB64(b64);
+            setTimeout(function () {
+              return setAnalyzeLabel("Recherche du prix, de l'apogée et de la température...");
+            }, 1500);
+            _context2.n = 4;
+            return callClaude({
+              system: "Tu es sommelier expert. Observe la photo d'une bouteille de vin et identifie ses caractéristiques. " + "Complète aussi, à partir de tes connaissances ou d'une recherche web si nécessaire (utile surtout pour le prix moyen constaté, moins pour la température qui dépend surtout du type de vin), une estimation du prix moyen du marché, la fenêtre d'apogée (période idéale de consommation) et la température idéale de service. " + "Réponds UNIQUEMENT avec un JSON valide, sans texte autour, au format exact: " + '{"name":"","vintage":"","type":"rouge|blanc|rose|effervescent","region":"","appellation":"","cepage":"","marketPrice":"","apogeeFrom":"","apogeeTo":"","idealTemp":""}. ' + "marketPrice: fourchette de prix constatée (ex: \"15-20 €\"). apogeeFrom/apogeeTo: années (ex: \"2026\"/\"2032\"). idealTemp: température en °C (ex: \"16-18°C\"). " + "Si une information n'est pas trouvable ou pas lisible, laisse une chaîne vide plutôt que d'inventer.",
+              text: "Identifie cette bouteille et complète ces informations.",
+              images: [b64],
+              webSearch: true,
+              maxTokens: 700
+            });
+          case 4:
+            raw = _context2.v;
+            parsed = extractJSON(raw);
+            if (parsed) {
+              setForm(function (f) {
+                return _objectSpread(_objectSpread({}, f), {}, {
+                  name: parsed.name || f.name,
+                  vintage: parsed.vintage || f.vintage,
+                  type: WINE_TYPES[parsed.type] ? parsed.type : f.type,
+                  region: parsed.region || f.region,
+                  appellation: parsed.appellation || f.appellation,
+                  cepage: parsed.cepage || f.cepage,
+                  marketPrice: parsed.marketPrice || f.marketPrice,
+                  apogeeFrom: parsed.apogeeFrom || f.apogeeFrom,
+                  apogeeTo: parsed.apogeeTo || f.apogeeTo,
+                  idealTemp: parsed.idealTemp || f.idealTemp
+                });
+              });
+            } else {
+              setError("Photo ajoutée, mais l'étiquette n'a pas pu être lue. Complète les champs manuellement.");
+            }
+            _context2.n = 6;
+            break;
+          case 5:
+            _context2.p = 5;
+            _t2 = _context2.v;
+            setError(_t2.message + " — tu peux compléter les champs à la main.");
+          case 6:
+            _context2.p = 6;
+            setAnalyzing(false);
+            return _context2.f(6);
+          case 7:
+            return _context2.a(2);
+        }
+      }, _callee2, null, [[2, 5, 6, 7]]);
+    }));
+    return _handleFile.apply(this, arguments);
+  }
+  function submit() {
+    return _submit2.apply(this, arguments);
+  }
+  function _submit2() {
+    _submit2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+      var qty, id, photoUrl, _t3;
+      return _regenerator().w(function (_context3) {
+        while (1) switch (_context3.p = _context3.n) {
+          case 0:
+            if (form.name.trim()) {
+              _context3.n = 1;
+              break;
+            }
+            setError("Donne au moins un nom à la bouteille.");
+            return _context3.a(2);
+          case 1:
+            setError("");
+            setSaving(true);
+            _context3.p = 2;
+            qty = Math.max(1, parseInt(form.quantity, 10) || 1);
+            id = genId();
+            photoUrl = null;
+            if (!photoB64) {
+              _context3.n = 4;
+              break;
+            }
+            _context3.n = 3;
+            return uploadPhoto(uid, id, photoB64);
+          case 3:
+            photoUrl = _context3.v;
+          case 4:
+            onSave({
+              id: id,
+              name: form.name.trim(),
+              vintage: form.vintage.trim(),
+              type: form.type,
+              region: form.region.trim(),
+              appellation: form.appellation.trim(),
+              cepage: form.cepage.trim(),
+              quantity: qty,
+              price: form.price ? parseFloat(form.price) : null,
+              marketPrice: form.marketPrice.trim(),
+              apogeeFrom: form.apogeeFrom.trim(),
+              apogeeTo: form.apogeeTo.trim(),
+              idealTemp: form.idealTemp.trim(),
+              cellar: parseInt(form.cellar, 10) || 0,
+              notes: form.notes.trim(),
+              photo: photoUrl,
+              dateAdded: new Date().toISOString()
+            }, qty);
+            _context3.n = 6;
+            break;
+          case 5:
+            _context3.p = 5;
+            _t3 = _context3.v;
+            setError("Envoi de la photo impossible : " + _t3.message);
+            setSaving(false);
+          case 6:
+            return _context3.a(2);
+        }
+      }, _callee3, null, [[2, 5]]);
+    }));
+    return _submit2.apply(this, arguments);
+  }
+  return /*#__PURE__*/React.createElement(Modal, {
+    title: "Ajouter une bouteille",
+    onClose: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-tabs"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: mode === "photo" ? "active" : "",
+    onClick: function onClick() {
+      return setMode("photo");
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "camera",
+    size: 14
+  }), " Photo"), /*#__PURE__*/React.createElement("button", {
+    className: mode === "manuel" ? "active" : "",
+    onClick: function onClick() {
+      return setMode("manuel");
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "notes",
+    size: 14
+  }), " Manuel")), mode === "photo" && /*#__PURE__*/React.createElement("div", {
+    className: "cv-photo-zone"
+  }, photoB64 ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("img", {
+    className: "cv-photo-preview",
+    src: "data:image/jpeg;base64," + photoB64,
+    alt: "Bouteille"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "cv-photo-source-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-link-btn",
+    onClick: function onClick() {
+      return cameraRef.current.click();
+    }
+  }, "Reprendre une photo"), /*#__PURE__*/React.createElement("button", {
+    className: "cv-link-btn",
+    onClick: function onClick() {
+      return galleryRef.current.click();
+    }
+  }, "Choisir une autre photo"))) : /*#__PURE__*/React.createElement("div", {
+    className: "cv-photo-source-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-upload-box",
+    onClick: function onClick() {
+      return cameraRef.current.click();
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "camera",
+    size: 22
+  }), /*#__PURE__*/React.createElement("span", null, "Prendre une photo")), /*#__PURE__*/React.createElement("button", {
+    className: "cv-upload-box",
+    onClick: function onClick() {
+      return galleryRef.current.click();
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "gallery",
+    size: 22
+  }), /*#__PURE__*/React.createElement("span", null, "Choisir dans la galerie"))), /*#__PURE__*/React.createElement("input", {
+    ref: cameraRef,
+    type: "file",
+    accept: "image/*",
+    capture: "environment",
+    hidden: true,
+    onChange: handleFile
+  }), /*#__PURE__*/React.createElement("input", {
+    ref: galleryRef,
+    type: "file",
+    accept: "image/*",
+    hidden: true,
+    onChange: handleFile
+  }), analyzing && /*#__PURE__*/React.createElement(Spinner, {
+    label: analyzeLabel
+  })), error && /*#__PURE__*/React.createElement("div", {
+    className: "cv-alert"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "alert",
+    size: 14
+  }), " ", error), /*#__PURE__*/React.createElement("div", {
+    className: "cv-form-grid"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Nom du vin *"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: form.name,
+    onChange: set("name"),
+    placeholder: "Ch\xE2teau..."
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Mill\xE9sime"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: form.vintage,
+    onChange: set("vintage"),
+    placeholder: "2019"
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Type"
+  }, /*#__PURE__*/React.createElement("select", {
+    value: form.type,
+    onChange: set("type")
+  }, TYPE_ORDER.map(function (t) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: t,
+      value: t
+    }, WINE_TYPES[t].label);
+  }))), /*#__PURE__*/React.createElement(Field, {
+    label: "Quantit\xE9"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: "1",
+    value: form.quantity,
+    onChange: set("quantity")
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "R\xE9gion"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: form.region,
+    onChange: set("region"),
+    placeholder: "Bordeaux..."
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Appellation"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: form.appellation,
+    onChange: set("appellation"),
+    placeholder: "Saint-\xC9milion..."
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "C\xE9page(s)"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: form.cepage,
+    onChange: set("cepage"),
+    placeholder: "Merlot, Cabernet..."
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Prix d'achat (\u20AC)"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    step: "0.01",
+    value: form.price,
+    onChange: set("price"),
+    placeholder: "25"
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Prix moyen constat\xE9"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: form.marketPrice,
+    onChange: set("marketPrice"),
+    placeholder: "15-20 \u20AC"
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Temp\xE9rature id\xE9ale"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: form.idealTemp,
+    onChange: set("idealTemp"),
+    placeholder: "16-18\xB0C"
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Apog\xE9e - de"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: form.apogeeFrom,
+    onChange: set("apogeeFrom"),
+    placeholder: "2024"
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Apog\xE9e - \xE0"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: form.apogeeTo,
+    onChange: set("apogeeTo"),
+    placeholder: "2030"
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Cave"
+  }, /*#__PURE__*/React.createElement("select", {
+    value: form.cellar,
+    onChange: set("cellar")
+  }, cellars.map(function (name, i) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: i,
+      value: i
+    }, name);
+  })))), /*#__PURE__*/React.createElement(Field, {
+    label: "Notes personnelles"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    rows: 2,
+    value: form.notes,
+    onChange: set("notes"),
+    placeholder: "Cadeau, coup de c\u0153ur au caveau..."
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "cv-modal-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-ghost",
+    onClick: onClose
+  }, "Annuler"), /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-primary",
+    onClick: submit,
+    disabled: saving
+  }, saving ? /*#__PURE__*/React.createElement("span", {
+    className: "cv-spin-circle"
+  }) : /*#__PURE__*/React.createElement(Icon, {
+    name: "plus",
+    size: 14
+  }), " ", saving ? "Envoi..." : "Ajouter à la cave")));
+}
+function MovementPopover(_ref9) {
+  var bottle = _ref9.bottle,
+    kind = _ref9.kind,
+    onConfirm = _ref9.onConfirm,
+    onClose = _ref9.onClose;
+  var _useState29 = useState(1),
+    _useState30 = _slicedToArray(_useState29, 2),
+    qty = _useState30[0],
+    setQty = _useState30[1];
+  var max = kind === "out" ? bottle.quantity : 999;
+  return /*#__PURE__*/React.createElement(Modal, {
+    title: (kind === "out" ? "Sortie : " : "Entrée : ") + bottle.name,
+    onClose: onClose
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "cv-muted"
+  }, kind === "out" ? "Combien de bouteilles quittent la cave ? (dégustée, offerte, cassée...)" : "Combien de bouteilles rejoignent la cave ?"), /*#__PURE__*/React.createElement(Field, {
+    label: "Quantit\xE9"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: "1",
+    max: max,
+    value: qty,
+    onChange: function onChange(e) {
+      return setQty(Math.max(1, Math.min(max, parseInt(e.target.value, 10) || 1)));
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "cv-modal-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-ghost",
+    onClick: onClose
+  }, "Annuler"), /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-primary",
+    onClick: function onClick() {
+      return onConfirm(qty);
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: kind === "out" ? "minus" : "plus",
+    size: 14
+  }), " Confirmer")));
+}
+function BottleCard(_ref0) {
+  var bottle = _ref0.bottle,
+    cellars = _ref0.cellars,
+    onIn = _ref0.onIn,
+    onOut = _ref0.onOut,
+    onOpenDetail = _ref0.onOpenDetail;
+  var t = WINE_TYPES[bottle.type] || WINE_TYPES.rouge;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "cv-card",
+    onClick: function onClick() {
+      return onOpenDetail(bottle);
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-card-visual",
+    style: {
+      background: t.label_bg
+    }
+  }, /*#__PURE__*/React.createElement(BottleIcon, {
+    type: bottle.type,
+    size: 46
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "cv-qty-badge"
+  }, "\xD7", bottle.quantity)), /*#__PURE__*/React.createElement("div", {
+    className: "cv-card-body"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-card-top"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "cv-tag",
+    style: {
+      color: t.shoulder
+    }
+  }, t.label), bottle.vintage && /*#__PURE__*/React.createElement("span", {
+    className: "cv-vintage"
+  }, bottle.vintage)), /*#__PURE__*/React.createElement("h4", null, bottle.name), /*#__PURE__*/React.createElement("p", {
+    className: "cv-muted cv-small"
+  }, [bottle.appellation, bottle.region].filter(Boolean).join(" · ") || "—"), bottle.apogeeFrom && /*#__PURE__*/React.createElement("p", {
+    className: "cv-small cv-apogee"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "calendar",
+    size: 12
+  }), " Apog\xE9e ", bottle.apogeeFrom, bottle.apogeeTo ? "–" + bottle.apogeeTo : ""), bottle.idealTemp && /*#__PURE__*/React.createElement("p", {
+    className: "cv-small cv-apogee"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "thermo",
+    size: 12
+  }), " ", bottle.idealTemp), /*#__PURE__*/React.createElement("p", {
+    className: "cv-small cv-apogee"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "cellar",
+    size: 12
+  }), " ", cellars[bottle.cellar] || cellars[0])), /*#__PURE__*/React.createElement("div", {
+    className: "cv-card-actions",
+    onClick: function onClick(e) {
+      return e.stopPropagation();
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-mini-btn",
+    onClick: function onClick() {
+      return onOut(bottle);
+    },
+    disabled: bottle.quantity <= 0,
+    title: "Signaler une sortie"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "minus",
+    size: 13
+  })), /*#__PURE__*/React.createElement("button", {
+    className: "cv-mini-btn",
+    onClick: function onClick() {
+      return onIn(bottle);
+    },
+    title: "Signaler une entr\xE9e"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "plus",
+    size: 13
+  }))));
+}
+function BottleDetailModal(_ref1) {
+  var bottle = _ref1.bottle,
+    cellars = _ref1.cellars,
+    onClose = _ref1.onClose;
+  if (!bottle) return null;
+  var t = WINE_TYPES[bottle.type] || WINE_TYPES.rouge;
+  return /*#__PURE__*/React.createElement(Modal, {
+    title: bottle.name,
+    onClose: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-detail-head"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-detail-visual",
+    style: {
+      background: t.label_bg
+    }
+  }, bottle.photo ? /*#__PURE__*/React.createElement("img", {
+    src: bottle.photo,
+    alt: bottle.name
+  }) : /*#__PURE__*/React.createElement(BottleIcon, {
+    type: bottle.type,
+    size: 64
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "cv-tag",
+    style: {
+      color: t.shoulder
+    }
+  }, t.label, bottle.vintage ? " · " + bottle.vintage : ""), /*#__PURE__*/React.createElement("p", {
+    className: "cv-small cv-muted"
+  }, [bottle.appellation, bottle.region].filter(Boolean).join(" · ")), /*#__PURE__*/React.createElement("p", {
+    className: "cv-small cv-muted"
+  }, bottle.cepage))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-detail-grid"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "cv-muted cv-small"
+  }, "Quantit\xE9"), /*#__PURE__*/React.createElement("strong", null, bottle.quantity)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "cv-muted cv-small"
+  }, "Cave"), /*#__PURE__*/React.createElement("strong", null, cellars[bottle.cellar] || cellars[0])), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "cv-muted cv-small"
+  }, "Prix d'achat"), /*#__PURE__*/React.createElement("strong", null, bottle.price ? bottle.price + " €" : "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "cv-muted cv-small"
+  }, "Prix moyen constat\xE9"), /*#__PURE__*/React.createElement("strong", null, bottle.marketPrice || "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "cv-muted cv-small"
+  }, "Temp\xE9rature id\xE9ale"), /*#__PURE__*/React.createElement("strong", null, bottle.idealTemp || "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "cv-muted cv-small"
+  }, "Apog\xE9e"), /*#__PURE__*/React.createElement("strong", null, bottle.apogeeFrom ? bottle.apogeeFrom + (bottle.apogeeTo ? "–" + bottle.apogeeTo : "") : "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "cv-muted cv-small"
+  }, "Ajout\xE9e le"), /*#__PURE__*/React.createElement("strong", null, new Date(bottle.dateAdded).toLocaleDateString("fr-FR")))), bottle.notes && /*#__PURE__*/React.createElement("p", {
+    className: "cv-notes"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "notes",
+    size: 13
+  }), " ", bottle.notes));
+}
+
+/* ---------------------------------------------------------
+   VUE : TABLEAU DE BORD
+--------------------------------------------------------- */
+var REGION_PALETTE = ["#6E7658", "#C6A15B", "#4E6E86", "#8A5A44", "#7A6C9E", "#4E8B7C", "#B2554A", "#5C7A99", "#9C7A2E", "#6B4E71"];
+function getTypeRegionStats(bottles) {
+  var totals = {
+    rouge: 0,
+    blanc: 0,
+    rose: 0,
+    effervescent: 0
+  };
+  var regionMaps = {
+    rouge: {},
+    blanc: {},
+    rose: {},
+    effervescent: {}
+  };
+  bottles.forEach(function (b) {
+    var type = WINE_TYPES[b.type] ? b.type : "rouge";
+    var qty = b.quantity || 0;
+    if (qty <= 0) return;
+    totals[type] += qty;
+    var region = (b.region || "").trim() || "Non renseigné";
+    regionMaps[type][region] = (regionMaps[type][region] || 0) + qty;
+  });
+  var allRegionNames = Array.from(new Set(TYPE_ORDER.flatMap(function (t) {
+    return Object.keys(regionMaps[t]);
+  })));
+  var regionColor = {};
+  allRegionNames.forEach(function (r, i) {
+    regionColor[r] = REGION_PALETTE[i % REGION_PALETTE.length];
+  });
+  var byType = {};
+  TYPE_ORDER.forEach(function (t) {
+    byType[t] = Object.entries(regionMaps[t]).map(function (_ref10) {
+      var _ref11 = _slicedToArray(_ref10, 2),
+        region = _ref11[0],
+        qty = _ref11[1];
+      return {
+        region: region,
+        qty: qty,
+        color: regionColor[region]
+      };
+    }).sort(function (a, b) {
+      return b.qty - a.qty;
+    });
+  });
+  return {
+    totals: totals,
+    byType: byType
+  };
+}
+function DashboardView(_ref12) {
+  var bottles = _ref12.bottles;
+  var _getTypeRegionStats = getTypeRegionStats(bottles),
+    totals = _getTypeRegionStats.totals,
+    byType = _getTypeRegionStats.byType;
+  var grandTotal = TYPE_ORDER.reduce(function (s, t) {
+    return s + totals[t];
+  }, 0);
+  var references = bottles.filter(function (b) {
+    return b.quantity > 0;
+  }).length;
+  var totalValue = bottles.reduce(function (s, b) {
+    return s + (b.price || 0) * b.quantity;
+  }, 0);
+  var maxTotal = Math.max.apply(Math, [1].concat(_toConsumableArray(TYPE_ORDER.map(function (t) {
+    return totals[t];
+  }))));
+  var cumulative = 0;
+  var donutSegments = TYPE_ORDER.map(function (t) {
+    var value = totals[t];
+    var pct = grandTotal > 0 ? value / grandTotal * 100 : 0;
+    var seg = {
+      type: t,
+      pct: pct,
+      start: cumulative,
+      color: WINE_TYPES[t].shoulder
+    };
+    cumulative += pct;
+    return seg;
+  });
+  var gradientStops = grandTotal > 0 ? donutSegments.filter(function (s) {
+    return s.pct > 0;
+  }).map(function (s) {
+    return s.color + " " + s.start + "% " + (s.start + s.pct) + "%";
+  }).join(", ") : "var(--line) 0% 100%";
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "cv-view-head"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", null, "Tableau de bord"), /*#__PURE__*/React.createElement("p", {
+    className: "cv-muted"
+  }, "Vue d'ensemble de ta cave."))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-kpi-row"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-kpi"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "cv-muted cv-small"
+  }, "Bouteilles"), /*#__PURE__*/React.createElement("strong", null, grandTotal)), /*#__PURE__*/React.createElement("div", {
+    className: "cv-kpi"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "cv-muted cv-small"
+  }, "R\xE9f\xE9rences"), /*#__PURE__*/React.createElement("strong", null, references)), /*#__PURE__*/React.createElement("div", {
+    className: "cv-kpi"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "cv-muted cv-small"
+  }, "Valeur estim\xE9e"), /*#__PURE__*/React.createElement("strong", null, totalValue > 0 ? totalValue.toFixed(0) + " €" : "—"))), grandTotal === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "cv-empty"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "wine",
+    size: 30
+  }), /*#__PURE__*/React.createElement("p", null, "Ajoute des bouteilles \xE0 ta cave pour voir appara\xEEtre ton tableau de bord.")) : /*#__PURE__*/React.createElement("div", {
+    className: "cv-dash-grid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-panel cv-dash-donut-panel"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "cv-dash-title"
+  }, "R\xE9partition par type"), /*#__PURE__*/React.createElement("div", {
+    className: "cv-donut-wrap"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-donut",
+    style: {
+      background: "conic-gradient(" + gradientStops + ")"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-donut-hole"
+  }, /*#__PURE__*/React.createElement("strong", null, grandTotal), /*#__PURE__*/React.createElement("span", null, "bouteilles"))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-donut-legend"
+  }, TYPE_ORDER.map(function (t) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "cv-legend-row",
+      key: t
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "cv-legend-dot",
+      style: {
+        background: WINE_TYPES[t].shoulder
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "cv-legend-label"
+    }, WINE_TYPES[t].label), /*#__PURE__*/React.createElement("span", {
+      className: "cv-legend-value"
+    }, totals[t]));
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-panel cv-dash-bars-panel"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "cv-dash-title"
+  }, "Par type et par r\xE9gion"), /*#__PURE__*/React.createElement("div", {
+    className: "cv-bars-chart"
+  }, TYPE_ORDER.map(function (t) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "cv-bar-col",
+      key: t
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "cv-bar-track"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "cv-bar-stack",
+      style: {
+        height: totals[t] / maxTotal * 100 + "%"
+      }
+    }, byType[t].map(function (seg) {
+      return /*#__PURE__*/React.createElement("div", {
+        key: seg.region,
+        className: "cv-bar-segment",
+        style: {
+          height: seg.qty / totals[t] * 100 + "%",
+          background: seg.color
+        },
+        title: seg.region + " : " + seg.qty
+      });
+    }))), /*#__PURE__*/React.createElement("span", {
+      className: "cv-bar-total"
+    }, totals[t]), /*#__PURE__*/React.createElement("span", {
+      className: "cv-bar-label"
+    }, WINE_TYPES[t].label));
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "cv-bars-legend"
+  }, TYPE_ORDER.map(function (t) {
+    return byType[t].length > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "cv-bars-legend-group",
+      key: t
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "cv-tag",
+      style: {
+        color: WINE_TYPES[t].shoulder
+      }
+    }, WINE_TYPES[t].label), /*#__PURE__*/React.createElement("div", {
+      className: "cv-bars-legend-items"
+    }, byType[t].map(function (seg) {
+      return /*#__PURE__*/React.createElement("span", {
+        key: seg.region,
+        className: "cv-chip",
+        style: {
+          borderColor: seg.color
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "cv-legend-dot",
+        style: {
+          background: seg.color
+        }
+      }), seg.region, " (", seg.qty, ")");
+    })));
+  })))));
+}
+
+/* ---------------------------------------------------------
+   VUE : MA CAVE
+--------------------------------------------------------- */
+function CaveView(_ref13) {
+  var bottles = _ref13.bottles,
+    cellars = _ref13.cellars,
+    addBottle = _ref13.addBottle,
+    applyMovement = _ref13.applyMovement,
+    uid = _ref13.uid;
+  var _useState31 = useState(false),
+    _useState32 = _slicedToArray(_useState31, 2),
+    showAdd = _useState32[0],
+    setShowAdd = _useState32[1];
+  var _useState33 = useState("tous"),
+    _useState34 = _slicedToArray(_useState33, 2),
+    filter = _useState34[0],
+    setFilter = _useState34[1];
+  var _useState35 = useState("toutes"),
+    _useState36 = _slicedToArray(_useState35, 2),
+    cellarFilter = _useState36[0],
+    setCellarFilter = _useState36[1];
+  var _useState37 = useState(null),
+    _useState38 = _slicedToArray(_useState37, 2),
+    movement = _useState38[0],
+    setMovement = _useState38[1];
+  var _useState39 = useState(null),
+    _useState40 = _slicedToArray(_useState39, 2),
+    detail = _useState40[0],
+    setDetail = _useState40[1];
+  var visible = bottles.filter(function (b) {
+    return filter === "tous" || b.type === filter;
+  }).filter(function (b) {
+    return cellarFilter === "toutes" || (b.cellar || 0) === cellarFilter;
+  });
+  var totalBottles = bottles.reduce(function (s, b) {
+    return s + b.quantity;
+  }, 0);
+  var totalValue = bottles.reduce(function (s, b) {
+    return s + (b.price || 0) * b.quantity;
+  }, 0);
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "cv-view-head"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", null, "Ma cave"), /*#__PURE__*/React.createElement("p", {
+    className: "cv-muted"
+  }, totalBottles, " bouteille", totalBottles > 1 ? "s" : "", " \xB7 ", bottles.length, " r\xE9f\xE9rence", bottles.length > 1 ? "s" : "", totalValue > 0 ? " · valeur estimée " + totalValue.toFixed(0) + " €" : "")), /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-primary",
+    onClick: function onClick() {
+      return setShowAdd(true);
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "plus",
+    size: 14
+  }), " Ajouter une bouteille")), /*#__PURE__*/React.createElement("div", {
+    className: "cv-chip-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-chip" + (filter === "tous" ? " active" : ""),
+    onClick: function onClick() {
+      return setFilter("tous");
+    }
+  }, "Tous"), TYPE_ORDER.map(function (t) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: t,
+      className: "cv-chip" + (filter === t ? " active" : ""),
+      onClick: function onClick() {
+        return setFilter(t);
+      }
+    }, WINE_TYPES[t].label);
+  })), cellars.length > 1 && /*#__PURE__*/React.createElement("div", {
+    className: "cv-chip-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-chip" + (cellarFilter === "toutes" ? " active" : ""),
+    onClick: function onClick() {
+      return setCellarFilter("toutes");
+    }
+  }, "Toutes les caves"), cellars.map(function (name, i) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: i,
+      className: "cv-chip" + (cellarFilter === i ? " active" : ""),
+      onClick: function onClick() {
+        return setCellarFilter(i);
+      }
+    }, name);
+  })), visible.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "cv-empty"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "wine",
+    size: 30
+  }), /*#__PURE__*/React.createElement("p", null, bottles.length === 0 ? "Ta cave est vide pour l'instant." : "Aucune bouteille pour ce filtre."), bottles.length === 0 && /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-primary",
+    onClick: function onClick() {
+      return setShowAdd(true);
+    }
+  }, "Ajouter ma premi\xE8re bouteille")) : /*#__PURE__*/React.createElement("div", {
+    className: "cv-grid"
+  }, visible.map(function (b) {
+    return /*#__PURE__*/React.createElement(BottleCard, {
+      key: b.id,
+      bottle: b,
+      cellars: cellars,
+      onIn: function onIn(bt) {
+        return setMovement({
+          bottle: bt,
+          kind: "in"
+        });
+      },
+      onOut: function onOut(bt) {
+        return setMovement({
+          bottle: bt,
+          kind: "out"
+        });
+      },
+      onOpenDetail: setDetail
+    });
+  })), showAdd && /*#__PURE__*/React.createElement(AddBottleModal, {
+    cellars: cellars,
+    uid: uid,
+    onClose: function onClose() {
+      return setShowAdd(false);
+    },
+    onSave: function onSave(bottle, qty) {
+      addBottle(bottle, qty);
+      setShowAdd(false);
+    }
+  }), movement && /*#__PURE__*/React.createElement(MovementPopover, {
+    bottle: movement.bottle,
+    kind: movement.kind,
+    onClose: function onClose() {
+      return setMovement(null);
+    },
+    onConfirm: function onConfirm(qty) {
+      applyMovement(movement.bottle.id, movement.kind, qty);
+      setMovement(null);
+    }
+  }), detail && /*#__PURE__*/React.createElement(BottleDetailModal, {
+    bottle: detail,
+    cellars: cellars,
+    onClose: function onClose() {
+      return setDetail(null);
+    }
+  }));
+}
+
+/* ---------------------------------------------------------
+   VUE : PLAT -> VIN
+--------------------------------------------------------- */
+function PlatVinView(_ref14) {
+  var bottles = _ref14.bottles;
+  var _useState41 = useState(""),
+    _useState42 = _slicedToArray(_useState41, 2),
+    dishText = _useState42[0],
+    setDishText = _useState42[1];
+  var _useState43 = useState(null),
+    _useState44 = _slicedToArray(_useState43, 2),
+    photoB64 = _useState44[0],
+    setPhotoB64 = _useState44[1];
+  var _useState45 = useState(false),
+    _useState46 = _slicedToArray(_useState45, 2),
+    loading = _useState46[0],
+    setLoading = _useState46[1];
+  var _useState47 = useState(""),
+    _useState48 = _slicedToArray(_useState47, 2),
+    error = _useState48[0],
+    setError = _useState48[1];
+  var _useState49 = useState(null),
+    _useState50 = _slicedToArray(_useState49, 2),
+    result = _useState50[0],
+    setResult = _useState50[1];
+  var fileRef = useRef(null);
+  function handlePhoto(_x9) {
+    return _handlePhoto.apply(this, arguments);
+  }
+  function _handlePhoto() {
+    _handlePhoto = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(e) {
+      var file, _t4;
+      return _regenerator().w(function (_context4) {
+        while (1) switch (_context4.n) {
+          case 0:
+            file = e.target.files[0];
+            if (file) {
+              _context4.n = 1;
+              break;
+            }
+            return _context4.a(2);
+          case 1:
+            _t4 = setPhotoB64;
+            _context4.n = 2;
+            return fileToResizedBase64(file);
+          case 2:
+            _t4(_context4.v);
+          case 3:
+            return _context4.a(2);
+        }
+      }, _callee4);
+    }));
+    return _handlePhoto.apply(this, arguments);
+  }
+  function run() {
+    return _run.apply(this, arguments);
+  }
+  function _run() {
+    _run = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+      var caveJson, raw, parsed, bottle, _t5;
+      return _regenerator().w(function (_context5) {
+        while (1) switch (_context5.p = _context5.n) {
+          case 0:
+            if (!(!dishText.trim() && !photoB64)) {
+              _context5.n = 1;
+              break;
+            }
+            setError("Décris ton plat ou ajoute une photo de l'assiette.");
+            return _context5.a(2);
+          case 1:
+            if (!(bottles.length === 0)) {
+              _context5.n = 2;
+              break;
+            }
+            setError("Ta cave est vide : ajoute des bouteilles d'abord.");
+            return _context5.a(2);
+          case 2:
+            setError("");
+            setLoading(true);
+            setResult(null);
+            _context5.p = 3;
+            caveJson = JSON.stringify(bottles.filter(function (b) {
+              return b.quantity > 0;
+            }).map(function (b) {
+              return {
+                id: b.id,
+                name: b.name,
+                type: b.type,
+                vintage: b.vintage,
+                region: b.region,
+                appellation: b.appellation,
+                cepage: b.cepage,
+                quantity: b.quantity
+              };
+            }));
+            _context5.n = 4;
+            return callClaude({
+              system: "Tu es sommelier. On te donne une cave à vin (JSON) et un plat (texte et/ou photo). Choisis LA meilleure bouteille de la cave pour ce plat (uniquement parmi les id fournis). Réponds UNIQUEMENT en JSON: " + '{"bottleId":"","reasoning":"2-3 phrases expliquant l\'accord","temperature":"ex: 16-18°C","decantage":"ex: carafer 30 min avant, ou Non nécessaire","verre":"type de verre conseillé","moment":"conseil de service"}',
+              text: "Cave disponible: " + caveJson + (dishText ? "\nPlat décrit: " + dishText : "\nPlat visible sur la photo jointe."),
+              images: photoB64 ? [photoB64] : [],
+              maxTokens: 700
+            });
+          case 4:
+            raw = _context5.v;
+            parsed = extractJSON(raw);
+            if (!(!parsed || !parsed.bottleId)) {
+              _context5.n = 5;
+              break;
+            }
+            throw new Error("Réponse imprécise, réessaie.");
+          case 5:
+            bottle = bottles.find(function (b) {
+              return b.id === parsed.bottleId;
+            });
+            if (bottle) {
+              _context5.n = 6;
+              break;
+            }
+            throw new Error("Bouteille suggérée introuvable dans la cave.");
+          case 6:
+            setResult(_objectSpread(_objectSpread({}, parsed), {}, {
+              bottle: bottle
+            }));
+            _context5.n = 8;
+            break;
+          case 7:
+            _context5.p = 7;
+            _t5 = _context5.v;
+            setError(_t5.message || "Une erreur est survenue.");
+          case 8:
+            _context5.p = 8;
+            setLoading(false);
+            return _context5.f(8);
+          case 9:
+            return _context5.a(2);
+        }
+      }, _callee5, null, [[3, 7, 8, 9]]);
+    }));
+    return _run.apply(this, arguments);
+  }
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "cv-view-head"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", null, "Plat \u2192 Vin"), /*#__PURE__*/React.createElement("p", {
+    className: "cv-muted"
+  }, "D\xE9cris ton plat, on te trouve le meilleur accord dans ta cave."))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-panel"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Ton plat"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    rows: 3,
+    value: dishText,
+    onChange: function onChange(e) {
+      return setDishText(e.target.value);
+    },
+    placeholder: "Ex : magret de canard, sauce au miel et \xE9pices..."
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "cv-photo-inline"
+  }, photoB64 ? /*#__PURE__*/React.createElement("img", {
+    className: "cv-photo-preview-sm",
+    src: "data:image/jpeg;base64," + photoB64,
+    alt: "Plat"
+  }) : /*#__PURE__*/React.createElement("button", {
+    className: "cv-upload-box cv-upload-box-sm",
+    onClick: function onClick() {
+      return fileRef.current.click();
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "camera",
+    size: 18
+  }), /*#__PURE__*/React.createElement("span", null, "Photo de l'assiette (optionnel)")), /*#__PURE__*/React.createElement("input", {
+    ref: fileRef,
+    type: "file",
+    accept: "image/*",
+    capture: "environment",
+    hidden: true,
+    onChange: handlePhoto
+  }), photoB64 && /*#__PURE__*/React.createElement("button", {
+    className: "cv-link-btn",
+    onClick: function onClick() {
+      return setPhotoB64(null);
+    }
+  }, "Retirer la photo")), error && /*#__PURE__*/React.createElement("div", {
+    className: "cv-alert"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "alert",
+    size: 14
+  }), " ", error), /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-primary",
+    onClick: run,
+    disabled: loading
+  }, loading ? /*#__PURE__*/React.createElement("span", {
+    className: "cv-spin-circle"
+  }) : /*#__PURE__*/React.createElement(Icon, {
+    name: "chef",
+    size: 14
+  }), " Trouver le vin id\xE9al")), result && /*#__PURE__*/React.createElement("div", {
+    className: "cv-result"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-result-bottle"
+  }, /*#__PURE__*/React.createElement(BottleIcon, {
+    type: result.bottle.type,
+    size: 50
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "cv-tag",
+    style: {
+      color: WINE_TYPES[result.bottle.type].shoulder
+    }
+  }, WINE_TYPES[result.bottle.type].label, result.bottle.vintage ? " · " + result.bottle.vintage : ""), /*#__PURE__*/React.createElement("h3", null, result.bottle.name))), /*#__PURE__*/React.createElement("p", {
+    className: "cv-reasoning"
+  }, result.reasoning), /*#__PURE__*/React.createElement("div", {
+    className: "cv-service-grid"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Icon, {
+    name: "thermo",
+    size: 15
+  }), /*#__PURE__*/React.createElement("span", null, result.temperature || "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Icon, {
+    name: "glass",
+    size: 15
+  }), /*#__PURE__*/React.createElement("span", null, result.verre || "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Icon, {
+    name: "clock",
+    size: 15
+  }), /*#__PURE__*/React.createElement("span", null, result.decantage || "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Icon, {
+    name: "info",
+    size: 15
+  }), /*#__PURE__*/React.createElement("span", null, result.moment || "—")))));
+}
+
+/* ---------------------------------------------------------
+   VUE : VIN -> PLAT
+--------------------------------------------------------- */
+function VinPlatView(_ref15) {
+  var bottles = _ref15.bottles;
+  var _useState51 = useState(""),
+    _useState52 = _slicedToArray(_useState51, 2),
+    bottleId = _useState52[0],
+    setBottleId = _useState52[1];
+  var _useState53 = useState(""),
+    _useState54 = _slicedToArray(_useState53, 2),
+    mainIngredient = _useState54[0],
+    setMainIngredient = _useState54[1];
+  var _useState55 = useState(false),
+    _useState56 = _slicedToArray(_useState55, 2),
+    loading = _useState56[0],
+    setLoading = _useState56[1];
+  var _useState57 = useState(""),
+    _useState58 = _slicedToArray(_useState57, 2),
+    error = _useState58[0],
+    setError = _useState58[1];
+  var _useState59 = useState(null),
+    _useState60 = _slicedToArray(_useState59, 2),
+    suggestions = _useState60[0],
+    setSuggestions = _useState60[1];
+  function run() {
+    return _run2.apply(this, arguments);
+  }
+  function _run2() {
+    _run2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
+      var bottle, raw, _parsed, _t6;
+      return _regenerator().w(function (_context6) {
+        while (1) switch (_context6.p = _context6.n) {
+          case 0:
+            bottle = bottles.find(function (b) {
+              return b.id === bottleId;
+            });
+            if (bottle) {
+              _context6.n = 1;
+              break;
+            }
+            setError("Choisis une bouteille de ta cave.");
+            return _context6.a(2);
+          case 1:
+            setError("");
+            setLoading(true);
+            setSuggestions(null);
+            _context6.p = 2;
+            _context6.n = 3;
+            return callClaude({
+              system: "Tu es sommelier. On te donne une bouteille de vin et éventuellement un ingrédient principal imposé. Propose EXACTEMENT 3 plats qui s'accordent, du plus classique au plus original. Réponds UNIQUEMENT en JSON: " + '{"suggestions":[{"plat":"","description":"1-2 phrases","pourquoi":"1 phrase sur l\'accord"}]}',
+              text: "Bouteille: " + bottle.name + ", type " + WINE_TYPES[bottle.type].label + ", millésime " + (bottle.vintage || "inconnu") + ", région " + (bottle.region || "inconnue") + ", cépage " + (bottle.cepage || "inconnu") + "." + (mainIngredient.trim() ? " Ingrédient principal imposé: " + mainIngredient.trim() + "." : ""),
+              maxTokens: 700
+            });
+          case 3:
+            raw = _context6.v;
+            _parsed = extractJSON(raw);
+            if (!(!_parsed || !_parsed.suggestions)) {
+              _context6.n = 4;
+              break;
+            }
+            throw new Error("Réponse imprécise, réessaie.");
+          case 4:
+            setSuggestions(_parsed.suggestions.slice(0, 3));
+            _context6.n = 6;
+            break;
+          case 5:
+            _context6.p = 5;
+            _t6 = _context6.v;
+            setError(_t6.message || "Une erreur est survenue.");
+          case 6:
+            _context6.p = 6;
+            setLoading(false);
+            return _context6.f(6);
+          case 7:
+            return _context6.a(2);
+        }
+      }, _callee6, null, [[2, 5, 6, 7]]);
+    }));
+    return _run2.apply(this, arguments);
+  }
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "cv-view-head"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", null, "Vin \u2192 Plat"), /*#__PURE__*/React.createElement("p", {
+    className: "cv-muted"
+  }, "Choisis une bouteille, re\xE7ois jusqu'\xE0 3 id\xE9es de plats."))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-panel"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Bouteille"
+  }, /*#__PURE__*/React.createElement("select", {
+    value: bottleId,
+    onChange: function onChange(e) {
+      return setBottleId(e.target.value);
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "\u2014 Choisir une bouteille \u2014"), bottles.map(function (b) {
+    return /*#__PURE__*/React.createElement("option", {
+      key: b.id,
+      value: b.id
+    }, b.name, b.vintage ? " (" + b.vintage + ")" : "");
+  }))), /*#__PURE__*/React.createElement(Field, {
+    label: "Composant principal (optionnel)"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: mainIngredient,
+    onChange: function onChange(e) {
+      return setMainIngredient(e.target.value);
+    },
+    placeholder: "Ex : porc, saint-jacques, champignons..."
+  })), error && /*#__PURE__*/React.createElement("div", {
+    className: "cv-alert"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "alert",
+    size: 14
+  }), " ", error), /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-primary",
+    onClick: run,
+    disabled: loading
+  }, loading ? /*#__PURE__*/React.createElement("span", {
+    className: "cv-spin-circle"
+  }) : /*#__PURE__*/React.createElement(Icon, {
+    name: "sparkles",
+    size: 14
+  }), " Sugg\xE9rer des plats")), suggestions && /*#__PURE__*/React.createElement("div", {
+    className: "cv-suggestions"
+  }, suggestions.map(function (s, i) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "cv-suggestion-card",
+      key: i
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "cv-suggestion-num"
+    }, i + 1), /*#__PURE__*/React.createElement("h4", null, s.plat), /*#__PURE__*/React.createElement("p", {
+      className: "cv-small"
+    }, s.description), /*#__PURE__*/React.createElement("p", {
+      className: "cv-small cv-muted cv-why"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "grape",
+      size: 12
+    }), " ", s.pourquoi));
+  })));
+}
+
+/* ---------------------------------------------------------
+   VUE : ANALYSER UNE BOUTEILLE
+--------------------------------------------------------- */
+function AnalyseView(_ref16) {
+  var addFavorite = _ref16.addFavorite,
+    uid = _ref16.uid;
+  var _useState61 = useState(null),
+    _useState62 = _slicedToArray(_useState61, 2),
+    photoB64 = _useState62[0],
+    setPhotoB64 = _useState62[1];
+  var _useState63 = useState(false),
+    _useState64 = _slicedToArray(_useState63, 2),
+    loading = _useState64[0],
+    setLoading = _useState64[1];
+  var _useState65 = useState("Analyse en cours..."),
+    _useState66 = _slicedToArray(_useState65, 2),
+    loadingLabel = _useState66[0],
+    setLoadingLabel = _useState66[1];
+  var _useState67 = useState(""),
+    _useState68 = _slicedToArray(_useState67, 2),
+    error = _useState68[0],
+    setError = _useState68[1];
+  var _useState69 = useState(null),
+    _useState70 = _slicedToArray(_useState69, 2),
+    analysis = _useState70[0],
+    setAnalysis = _useState70[1];
+  var _useState71 = useState(false),
+    _useState72 = _slicedToArray(_useState71, 2),
+    favSaved = _useState72[0],
+    setFavSaved = _useState72[1];
+  var _useState73 = useState(false),
+    _useState74 = _slicedToArray(_useState73, 2),
+    favSaving = _useState74[0],
+    setFavSaving = _useState74[1];
+  var cameraRef = useRef(null);
+  var galleryRef = useRef(null);
+  function handlePhoto(_x0) {
+    return _handlePhoto2.apply(this, arguments);
+  }
+  function _handlePhoto2() {
+    _handlePhoto2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7(e) {
+      var file, _t7;
+      return _regenerator().w(function (_context7) {
+        while (1) switch (_context7.n) {
+          case 0:
+            file = e.target.files[0];
+            if (file) {
+              _context7.n = 1;
+              break;
+            }
+            return _context7.a(2);
+          case 1:
+            _t7 = setPhotoB64;
+            _context7.n = 2;
+            return fileToResizedBase64(file);
+          case 2:
+            _t7(_context7.v);
+            setAnalysis(null);
+            setFavSaved(false);
+          case 3:
+            return _context7.a(2);
+        }
+      }, _callee7);
+    }));
+    return _handlePhoto2.apply(this, arguments);
+  }
+  function run() {
+    return _run3.apply(this, arguments);
+  }
+  function _run3() {
+    _run3 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8() {
+      var raw, _parsed2, _t8;
+      return _regenerator().w(function (_context8) {
+        while (1) switch (_context8.p = _context8.n) {
+          case 0:
+            if (photoB64) {
+              _context8.n = 1;
+              break;
+            }
+            setError("Prends d'abord une photo de l'étiquette.");
+            return _context8.a(2);
+          case 1:
+            setError("");
+            setLoading(true);
+            setAnalysis(null);
+            setFavSaved(false);
+            setLoadingLabel("Lecture de l'étiquette...");
+            _context8.p = 2;
+            setTimeout(function () {
+              return setLoadingLabel("Recherche d'avis et de prix en ligne...");
+            }, 1800);
+            _context8.n = 3;
+            return callClaude({
+              system: "Tu es sommelier expert et critique vin. On te montre la photo de l'étiquette d'une bouteille. Identifie le vin puis recherche sur le web des informations fiables et récentes (avis, prix, notes). Réponds UNIQUEMENT en JSON, sans texte autour: " + '{"nom":"","type":"rouge|blanc|rose|effervescent","vintage":"","qualite":"note ou appréciation qualitative, 2-3 phrases","prix":"fourchette de prix constatée","accompagnement":"suggestions de plats, 1-2 phrases","avisGeneral":"synthèse des avis trouvés, 2-3 phrases","conseilOuverture":"température, carafage, verre","apogee":"fenêtre de consommation idéale"}. ' + "Si une information reste introuvable, indique-le honnêtement plutôt que d'inventer.",
+              text: "Analyse cette bouteille.",
+              images: [photoB64],
+              webSearch: true,
+              maxTokens: 1200
+            });
+          case 3:
+            raw = _context8.v;
+            _parsed2 = extractJSON(raw);
+            if (_parsed2) {
+              _context8.n = 4;
+              break;
+            }
+            throw new Error("Impossible d'interpréter l'analyse, réessaie.");
+          case 4:
+            setAnalysis(_parsed2);
+            _context8.n = 6;
+            break;
+          case 5:
+            _context8.p = 5;
+            _t8 = _context8.v;
+            setError(_t8.message || "Une erreur est survenue.");
+          case 6:
+            _context8.p = 6;
+            setLoading(false);
+            return _context8.f(6);
+          case 7:
+            return _context8.a(2);
+        }
+      }, _callee8, null, [[2, 5, 6, 7]]);
+    }));
+    return _run3.apply(this, arguments);
+  }
+  function handleAddFavorite() {
+    return _handleAddFavorite.apply(this, arguments);
+  }
+  function _handleAddFavorite() {
+    _handleAddFavorite = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9() {
+      var id, photoUrl, _t9;
+      return _regenerator().w(function (_context9) {
+        while (1) switch (_context9.p = _context9.n) {
+          case 0:
+            setFavSaving(true);
+            _context9.p = 1;
+            id = genId();
+            photoUrl = null;
+            if (!photoB64) {
+              _context9.n = 3;
+              break;
+            }
+            _context9.n = 2;
+            return uploadPhoto(uid, id, photoB64);
+          case 2:
+            photoUrl = _context9.v;
+          case 3:
+            addFavorite({
+              id: id,
+              name: analysis.nom || "Vin sans nom",
+              type: WINE_TYPES[analysis.type] ? analysis.type : "rouge",
+              vintage: analysis.vintage || "",
+              quality: analysis.qualite || "",
+              marketPrice: analysis.prix || "",
+              pairing: analysis.accompagnement || "",
+              generalOpinion: analysis.avisGeneral || "",
+              openingAdvice: analysis.conseilOuverture || "",
+              apogee: analysis.apogee || "",
+              photo: photoUrl,
+              notes: "",
+              dateAdded: new Date().toISOString()
+            });
+            setFavSaved(true);
+            _context9.n = 5;
+            break;
+          case 4:
+            _context9.p = 4;
+            _t9 = _context9.v;
+            setError("Envoi de la photo impossible : " + _t9.message);
+          case 5:
+            _context9.p = 5;
+            setFavSaving(false);
+            return _context9.f(5);
+          case 6:
+            return _context9.a(2);
+        }
+      }, _callee9, null, [[1, 4, 5, 6]]);
+    }));
+    return _handleAddFavorite.apply(this, arguments);
+  }
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "cv-view-head"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", null, "Analyser une bouteille"), /*#__PURE__*/React.createElement("p", {
+    className: "cv-muted"
+  }, "Scanne n'importe quelle \xE9tiquette pour un avis complet."))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-panel"
+  }, photoB64 ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("img", {
+    className: "cv-photo-preview",
+    src: "data:image/jpeg;base64," + photoB64,
+    alt: "\xC9tiquette"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "cv-photo-source-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-link-btn",
+    onClick: function onClick() {
+      return cameraRef.current.click();
+    }
+  }, "Reprendre une photo"), /*#__PURE__*/React.createElement("button", {
+    className: "cv-link-btn",
+    onClick: function onClick() {
+      return galleryRef.current.click();
+    }
+  }, "Choisir une autre photo"))) : /*#__PURE__*/React.createElement("div", {
+    className: "cv-photo-source-row"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-upload-box",
+    onClick: function onClick() {
+      return cameraRef.current.click();
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "scan",
+    size: 22
+  }), /*#__PURE__*/React.createElement("span", null, "Scanner avec l'appareil photo")), /*#__PURE__*/React.createElement("button", {
+    className: "cv-upload-box",
+    onClick: function onClick() {
+      return galleryRef.current.click();
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "gallery",
+    size: 22
+  }), /*#__PURE__*/React.createElement("span", null, "Choisir dans la galerie"))), /*#__PURE__*/React.createElement("input", {
+    ref: cameraRef,
+    type: "file",
+    accept: "image/*",
+    capture: "environment",
+    hidden: true,
+    onChange: handlePhoto
+  }), /*#__PURE__*/React.createElement("input", {
+    ref: galleryRef,
+    type: "file",
+    accept: "image/*",
+    hidden: true,
+    onChange: handlePhoto
+  }), error && /*#__PURE__*/React.createElement("div", {
+    className: "cv-alert"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "alert",
+    size: 14
+  }), " ", error), loading ? /*#__PURE__*/React.createElement(Spinner, {
+    label: loadingLabel
+  }) : /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-primary",
+    onClick: run
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "scan",
+    size: 14
+  }), " Analyser cette bouteille")), analysis && /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-title-row"
+  }, /*#__PURE__*/React.createElement("h3", null, analysis.nom, analysis.vintage ? " · " + analysis.vintage : ""), /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn " + (favSaved ? "cv-btn-ghost" : "cv-btn-primary"),
+    onClick: handleAddFavorite,
+    disabled: favSaved || favSaving
+  }, favSaving ? /*#__PURE__*/React.createElement("span", {
+    className: "cv-spin-circle"
+  }) : /*#__PURE__*/React.createElement(Icon, {
+    name: favSaved ? "heart" : "heartOutline",
+    size: 14
+  }), " ", favSaving ? "Envoi..." : favSaved ? "Ajouté à mes découvertes" : "Ajouter à mes découvertes")), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-grid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "trend",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Qualit\xE9"), /*#__PURE__*/React.createElement("p", null, analysis.qualite))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "euro",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Prix"), /*#__PURE__*/React.createElement("p", null, analysis.prix))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "chef",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Accompagnement"), /*#__PURE__*/React.createElement("p", null, analysis.accompagnement))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "check",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Avis g\xE9n\xE9ral"), /*#__PURE__*/React.createElement("p", null, analysis.avisGeneral))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "thermo",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Conseil d'ouverture"), /*#__PURE__*/React.createElement("p", null, analysis.conseilOuverture))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "calendar",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Apog\xE9e"), /*#__PURE__*/React.createElement("p", null, analysis.apogee))))));
+}
+
+/* ---------------------------------------------------------
+   VUE : MES FAVORIS
+--------------------------------------------------------- */
+function FavoriteDetailModal(_ref17) {
+  var favorite = _ref17.favorite,
+    onClose = _ref17.onClose,
+    onSaveNotes = _ref17.onSaveNotes,
+    onDelete = _ref17.onDelete;
+  var _useState75 = useState(favorite.notes || ""),
+    _useState76 = _slicedToArray(_useState75, 2),
+    notes = _useState76[0],
+    setNotes = _useState76[1];
+  var _useState77 = useState(false),
+    _useState78 = _slicedToArray(_useState77, 2),
+    saved = _useState78[0],
+    setSaved = _useState78[1];
+  var t = WINE_TYPES[favorite.type] || WINE_TYPES.rouge;
+  function save() {
+    onSaveNotes(favorite.id, notes);
+    setSaved(true);
+    setTimeout(function () {
+      return setSaved(false);
+    }, 1500);
+  }
+  return /*#__PURE__*/React.createElement(Modal, {
+    title: favorite.name,
+    onClose: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-detail-head"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-detail-visual",
+    style: {
+      background: t.label_bg
+    }
+  }, favorite.photo ? /*#__PURE__*/React.createElement("img", {
+    src: favorite.photo,
+    alt: favorite.name
+  }) : /*#__PURE__*/React.createElement(BottleIcon, {
+    type: favorite.type,
+    size: 64
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "cv-tag",
+    style: {
+      color: t.shoulder
+    }
+  }, t.label, favorite.vintage ? " · " + favorite.vintage : ""))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-grid",
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "trend",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Qualit\xE9"), /*#__PURE__*/React.createElement("p", null, favorite.quality || "—"))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "euro",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Prix moyen"), /*#__PURE__*/React.createElement("p", null, favorite.marketPrice || "—"))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "chef",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Avec quoi le manger"), /*#__PURE__*/React.createElement("p", null, favorite.pairing || "—"))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "check",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Avis g\xE9n\xE9ral"), /*#__PURE__*/React.createElement("p", null, favorite.generalOpinion || "—"))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "thermo",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Conseil d'ouverture"), /*#__PURE__*/React.createElement("p", null, favorite.openingAdvice || "—"))), /*#__PURE__*/React.createElement("div", {
+    className: "cv-analysis-item"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "calendar",
+    size: 16
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Apog\xE9e"), /*#__PURE__*/React.createElement("p", null, favorite.apogee || "—")))), /*#__PURE__*/React.createElement(Field, {
+    label: "Mes notes personnelles"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    rows: 4,
+    value: notes,
+    onChange: function onChange(e) {
+      return setNotes(e.target.value);
+    },
+    placeholder: "Tes impressions, l'occasion o\xF9 tu l'as bu, tes id\xE9es d'accord..."
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "cv-modal-actions",
+    style: {
+      justifyContent: "space-between"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-ghost",
+    onClick: function onClick() {
+      return onDelete(favorite.id);
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "trash",
+    size: 14
+  }), " Retirer de mes d\xE9couvertes"), /*#__PURE__*/React.createElement("button", {
+    className: "cv-btn cv-btn-primary",
+    onClick: save
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: saved ? "check" : "notes",
+    size: 14
+  }), " ", saved ? "Enregistré" : "Enregistrer la note")));
+}
+function FavorisView(_ref18) {
+  var favorites = _ref18.favorites,
+    _onSaveNotes = _ref18.onSaveNotes,
+    _onDelete = _ref18.onDelete;
+  var _useState79 = useState(null),
+    _useState80 = _slicedToArray(_useState79, 2),
+    detail = _useState80[0],
+    setDetail = _useState80[1];
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "cv-view-head"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", null, "Mes d\xE9couvertes"), /*#__PURE__*/React.createElement("p", {
+    className: "cv-muted"
+  }, "Les bouteilles analys\xE9es que tu veux retenir, avec tes propres notes."))), favorites.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "cv-empty"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "heart",
+    size: 30
+  }), /*#__PURE__*/React.createElement("p", null, "Aucune d\xE9couverte pour l'instant. Scanne une bouteille dans \"Analyser\", puis ajoute-la \xE0 tes d\xE9couvertes.")) : /*#__PURE__*/React.createElement("div", {
+    className: "cv-grid"
+  }, favorites.map(function (f) {
+    var t = WINE_TYPES[f.type] || WINE_TYPES.rouge;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "cv-card",
+      key: f.id,
+      onClick: function onClick() {
+        return setDetail(f);
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "cv-card-visual",
+      style: {
+        background: t.label_bg
+      }
+    }, f.photo ? /*#__PURE__*/React.createElement("img", {
+      className: "cv-fav-photo",
+      src: f.photo,
+      alt: f.name
+    }) : /*#__PURE__*/React.createElement(BottleIcon, {
+      type: f.type,
+      size: 46
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "cv-card-body"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "cv-card-top"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "cv-tag",
+      style: {
+        color: t.shoulder
+      }
+    }, t.label), f.vintage && /*#__PURE__*/React.createElement("span", {
+      className: "cv-vintage"
+    }, f.vintage)), /*#__PURE__*/React.createElement("h4", null, f.name), f.marketPrice && /*#__PURE__*/React.createElement("p", {
+      className: "cv-muted cv-small"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "euro",
+      size: 12
+    }), " ", f.marketPrice), f.apogee && /*#__PURE__*/React.createElement("p", {
+      className: "cv-small cv-apogee"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "calendar",
+      size: 12
+    }), " ", f.apogee), f.notes && /*#__PURE__*/React.createElement("p", {
+      className: "cv-small cv-muted cv-fav-note-preview"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "notes",
+      size: 12
+    }), " ", f.notes)));
+  })), detail && /*#__PURE__*/React.createElement(FavoriteDetailModal, {
+    favorite: detail,
+    onClose: function onClose() {
+      return setDetail(null);
+    },
+    onSaveNotes: function onSaveNotes(id, notes) {
+      _onSaveNotes(id, notes);
+      setDetail(function (d) {
+        return d && _objectSpread(_objectSpread({}, d), {}, {
+          notes: notes
+        });
+      });
+    },
+    onDelete: function onDelete(id) {
+      _onDelete(id);
+      setDetail(null);
+    }
+  }));
+}
+
+/* ---------------------------------------------------------
+   APP RACINE
+--------------------------------------------------------- */
+var NAV = [{
+  id: "cave",
+  label: "Ma cave",
+  icon: "wine"
+}, {
+  id: "tdb",
+  label: "Tableau de bord",
+  icon: "chart"
+}, {
+  id: "platVin",
+  label: "Plat → Vin",
+  icon: "chef"
+}, {
+  id: "vinPlat",
+  label: "Vin → Plat",
+  icon: "sparkles"
+}, {
+  id: "analyse",
+  label: "Analyser",
+  icon: "scan"
+}, {
+  id: "favoris",
+  label: "Mes découvertes",
+  icon: "heart"
+}];
+function CaveContent(_ref19) {
+  var uid = _ref19.uid,
+    userEmail = _ref19.userEmail;
+  var _useState81 = useState("cave"),
+    _useState82 = _slicedToArray(_useState81, 2),
+    view = _useState82[0],
+    setView = _useState82[1];
+  var _useState83 = useState([]),
+    _useState84 = _slicedToArray(_useState83, 2),
+    bottles = _useState84[0],
+    setBottles = _useState84[1];
+  var _useState85 = useState([]),
+    _useState86 = _slicedToArray(_useState85, 2),
+    movements = _useState86[0],
+    setMovements = _useState86[1];
+  var _useState87 = useState([]),
+    _useState88 = _slicedToArray(_useState87, 2),
+    favorites = _useState88[0],
+    setFavorites = _useState88[1];
+  var _useState89 = useState(["Cave 1", "Cave 2"]),
+    _useState90 = _slicedToArray(_useState89, 2),
+    cellars = _useState90[0],
+    setCellars = _useState90[1];
+  var _useState91 = useState(false),
+    _useState92 = _slicedToArray(_useState91, 2),
+    showSettings = _useState92[0],
+    setShowSettings = _useState92[1];
+  var _useState93 = useState(!!getApiKey()),
+    _useState94 = _slicedToArray(_useState93, 2),
+    hasKey = _useState94[0],
+    setHasKey = _useState94[1];
+  var _useState95 = useState(false),
+    _useState96 = _slicedToArray(_useState95, 2),
+    ready = _useState96[0],
+    setReady = _useState96[1];
+  useEffect(function () {
+    loadCaveData(uid).then(function (d) {
+      setBottles(d.bottles || []);
+      setMovements(d.movements || []);
+      setFavorites(d.favorites || []);
+      setCellars(d.cellars || ["Cave 1", "Cave 2"]);
+      setReady(true);
+    });
+  }, [uid]);
+  useEffect(function () {
+    if (ready) saveCaveData(uid, {
+      bottles: bottles,
+      movements: movements,
+      favorites: favorites,
+      cellars: cellars
+    });
+  }, [bottles, movements, favorites, cellars, ready, uid]);
+  var addBottle = useCallback(function (bottle, qty) {
+    setBottles(function (prev) {
+      return [bottle].concat(_toConsumableArray(prev));
+    });
+    setMovements(function (prev) {
+      return [{
+        id: genId(),
+        bottleId: bottle.id,
+        bottleName: bottle.name,
+        kind: "in",
+        qty: qty,
+        date: new Date().toISOString()
+      }].concat(_toConsumableArray(prev));
+    });
+  }, []);
+  var applyMovement = useCallback(function (bottleId, kind, qty) {
+    setBottles(function (prev) {
+      return prev.map(function (b) {
+        return b.id === bottleId ? _objectSpread(_objectSpread({}, b), {}, {
+          quantity: kind === "out" ? Math.max(0, b.quantity - qty) : b.quantity + qty
+        }) : b;
+      });
+    });
+    setBottles(function (prev) {
+      var b = prev.find(function (x) {
+        return x.id === bottleId;
+      });
+      if (b) setMovements(function (mv) {
+        return [{
+          id: genId(),
+          bottleId: bottleId,
+          bottleName: b.name,
+          kind: kind,
+          qty: qty,
+          date: new Date().toISOString()
+        }].concat(_toConsumableArray(mv));
+      });
+      return prev;
+    });
+  }, []);
+  var addFavorite = useCallback(function (favorite) {
+    setFavorites(function (prev) {
+      return [favorite].concat(_toConsumableArray(prev));
+    });
+  }, []);
+  var saveFavoriteNotes = useCallback(function (id, notes) {
+    setFavorites(function (prev) {
+      return prev.map(function (f) {
+        return f.id === id ? _objectSpread(_objectSpread({}, f), {}, {
+          notes: notes
+        }) : f;
+      });
+    });
+  }, []);
+  var deleteFavorite = useCallback(function (id) {
+    setFavorites(function (prev) {
+      return prev.filter(function (f) {
+        return f.id !== id;
+      });
+    });
+  }, []);
+  function handleSignOut() {
+    return _handleSignOut.apply(this, arguments);
+  }
+  function _handleSignOut() {
+    _handleSignOut = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0() {
+      return _regenerator().w(function (_context0) {
+        while (1) switch (_context0.n) {
+          case 0:
+            _context0.n = 1;
+            return firebase.auth().signOut();
+          case 1:
+            return _context0.a(2);
+        }
+      }, _callee0);
+    }));
+    return _handleSignOut.apply(this, arguments);
+  }
+  if (!ready) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "cv-gate-screen"
+    }, /*#__PURE__*/React.createElement(Spinner, {
+      label: "Chargement de ta cave depuis le cloud..."
+    }));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "cv-root"
+  }, /*#__PURE__*/React.createElement("aside", {
+    className: "cv-sidebar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "cv-brand"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "wine",
+    size: 19
+  }), /*#__PURE__*/React.createElement("span", null, "Ma Cave")), /*#__PURE__*/React.createElement("nav", null, NAV.map(function (n) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: n.id,
+      className: "cv-nav-btn" + (view === n.id ? " active" : ""),
+      onClick: function onClick() {
+        return setView(n.id);
+      }
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: n.icon,
+      size: 16
+    }), /*#__PURE__*/React.createElement("span", null, n.label), view === n.id && /*#__PURE__*/React.createElement(Icon, {
+      name: "chevron",
+      size: 14
+    }));
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "cv-nav-foot"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "cv-nav-btn",
+    onClick: function onClick() {
+      return setShowSettings(true);
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "gear",
+    size: 16
+  }), /*#__PURE__*/React.createElement("span", null, "R\xE9glages"), !hasKey && /*#__PURE__*/React.createElement("span", {
+    title: "Cl\xE9 API manquante",
+    style: {
+      color: "#B23A56"
+    }
+  }, "\u25CF")))), /*#__PURE__*/React.createElement("main", {
+    className: "cv-main"
+  }, view === "cave" && /*#__PURE__*/React.createElement(CaveView, {
+    bottles: bottles,
+    cellars: cellars,
+    addBottle: addBottle,
+    applyMovement: applyMovement,
+    uid: uid
+  }), view === "tdb" && /*#__PURE__*/React.createElement(DashboardView, {
+    bottles: bottles
+  }), view === "platVin" && /*#__PURE__*/React.createElement(PlatVinView, {
+    bottles: bottles
+  }), view === "vinPlat" && /*#__PURE__*/React.createElement(VinPlatView, {
+    bottles: bottles
+  }), view === "analyse" && /*#__PURE__*/React.createElement(AnalyseView, {
+    addFavorite: addFavorite,
+    uid: uid
+  }), view === "favoris" && /*#__PURE__*/React.createElement(FavorisView, {
+    favorites: favorites,
+    onSaveNotes: saveFavoriteNotes,
+    onDelete: deleteFavorite
+  })), showSettings && /*#__PURE__*/React.createElement(SettingsModal, {
+    cellars: cellars,
+    onSaveCellars: setCellars,
+    userEmail: userEmail,
+    onSignOut: handleSignOut,
+    onClose: function onClose() {
+      setShowSettings(false);
+      setHasKey(!!getApiKey());
+    }
+  }));
+}
+function App() {
+  var _useState97 = useState(false),
+    _useState98 = _slicedToArray(_useState97, 2),
+    authChecked = _useState98[0],
+    setAuthChecked = _useState98[1];
+  var _useState99 = useState(null),
+    _useState100 = _slicedToArray(_useState99, 2),
+    user = _useState100[0],
+    setUser = _useState100[1];
+  useEffect(function () {
+    initFirebase();
+    var unsub = firebase.auth().onAuthStateChanged(function (u) {
+      setUser(u);
+      setAuthChecked(true);
+    });
+    return unsub;
+  }, []);
+  if (!authChecked) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "cv-gate-screen"
+    }, /*#__PURE__*/React.createElement(Spinner, {
+      label: "Connexion..."
+    }));
+  }
+  if (!user) {
+    return /*#__PURE__*/React.createElement(AuthScreen, null);
+  }
+  return /*#__PURE__*/React.createElement(CaveContent, {
+    uid: user.uid,
+    userEmail: user.email
+  });
+}
+var root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(/*#__PURE__*/React.createElement(App, null));
+</script>
+</body>
+</html>
